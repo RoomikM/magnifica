@@ -208,8 +208,18 @@ function profitHtml(D){
   ${r==='month'?`<div class="navdate pnav"><button class="iconbtn" data-pm="-1" aria-label="Попередній місяць">‹</button><span class="lbl">${MONTHS[pm-1]} ${py}</span><button class="iconbtn" data-pm="1" aria-label="Наступний місяць">›</button>${mk!==todayKey().slice(0,7)?'<button class="btn sm" data-pm="0">Цей місяць</button>':''}</div>`:''}
   <div><div class="profit-main ${net<0?'neg':'pos'}">${net<0?'−':''}${money(Math.abs(net))}</div>
    ${margin==null?'':`<div class="sub">${margin<0?'−'+Math.abs(margin):margin}% від доходу${futSum?` · попереду записів на ${money(futSum)}`:''}</div>`}</div>
-  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>isOk(a)&&inR(a.d)).length)}</b></div></div>
+  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>counted(a)&&inR(a.d)).length)}</b></div></div>
  </div>`;
+}
+function workedHtml(D){
+ if(!can('stats'))return '';
+ const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7),[py,pm]=mk.split('-').map(Number);
+ const inR=k=>r==='all'||String(k).startsWith(mk);
+ const list=state.appts.filter(a=>inR(a.d));
+ const done=list.filter(counted).length;
+ const works=r==='all'?SV.reduce((t,x)=>t+(+(D.summary.services[x.id]||{}).count||0),0):D.days.filter(x=>inR(x.key)).reduce((t,x)=>t+Object.values(x.c||{}).reduce((a,v)=>a+(+v||0),0),0);
+ const up=list.filter(a=>isOk(a)&&!counted(a)).length,miss=list.filter(a=>!isOk(a)).length;
+ return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}</div></div>`;
 }
 function serviceCards(S){
  const max=Math.max(1,...SV.map(s=>S.services[s.id].amount));
@@ -376,6 +386,7 @@ function renderAll(){
  $('period').textContent=S.from&&can('stats')?full(S.from)+' — '+full(S.to):'—';
  if(can('stats')){
   put('profit',profitHtml(D));
+  put('worked',workedHtml(D));
   put('kpis',
    kpi('Загальна сума',money(S.total),S.from?full(S.from)+' — '+full(S.to):'ще немає даних')+
    kpi('Активні дні',fmt(S.active),'днів із записами')+
