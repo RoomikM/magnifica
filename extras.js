@@ -151,15 +151,15 @@ $('masters').addEventListener('click',e=>{
 const isFixedCat=id=>{const c=cfgCats().find(x=>x.id===id);return c?(c.fixed!=null?!!c.fixed:id==='rent'||id==='tax'):false};
 function breakevenHtml(D){
  if(!hasFin())return'';
- const mk=todayKey().slice(0,7),pk=addMonths(todayKey(),-1).slice(0,7);
- /* постійна категорія: якщо задано щомісячну суму, беремо її (або фактичні витрати, коли вони більші) */
- const fixed=m=>cfgCats().filter(c=>isFixedCat(c.id)).reduce((t,c)=>{
+ const mk=todayKey().slice(0,7);
+ /* усі категорії: заданa щомісячна сума, або фактичні витрати місяця, якщо вони більші */
+ const fixed=m=>cfgCats().reduce((t,c)=>{
   const rec=state.exps.filter(x=>String(x.d).startsWith(m)&&x.cat===c.id).reduce((a,x)=>a+(+x.amount||0),0);
   return t+(+c.amt>0?Math.max(+c.amt,rec):rec);
  },0);
  const sal=m=>state.sals.filter(x=>String(x.d).startsWith(m)).reduce((t,x)=>t+(+x.amount||0),0);
- const f=Math.max(fixed(mk),fixed(pk)),s=Math.max(sal(mk),sal(pk)),target=f+s;
- const TT='Постійні витрати (категорії з позначкою «пост.») та зарплати; береться більше з цього й минулого місяця';
+ const target=fixed(mk)+sal(mk);
+ const TT='Усі витрати цього місяця (або задана щомісячна сума категорії, якщо вона більша) та зарплати';
  if(!target)return`<div class="card be-card" title="${TT}"><div class="be-head"><h2>Точка беззбитковості</h2><span class="be-n">немає даних</span></div></div>`;
  const row=D.monthly.find(r=>r.key===mk),earned=row?row.total:0,pct=Math.min(100,earned/target*100),left=Math.max(0,target-earned);
  return`<div class="card be-card" title="${TT}"><div class="be-head"><h2>Точка беззбитковості</h2><span class="be-n"><b>${money(earned)}</b> / ${money(target)}</span></div>

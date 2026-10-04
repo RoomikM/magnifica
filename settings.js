@@ -70,8 +70,8 @@ function renderSettings(force){
   ${cfgGroups().map(g=>`<div class="setrow cat" data-gid="${esc(g.id)}"><input class="nm" value="${esc(g.name)}" aria-label="Назва групи" maxlength="40"><span class="hint" style="margin:0">${sv.filter(x=>x.gid===g.id).length} посл.</span><button class="rm" data-rm-grp="${esc(g.id)}" aria-label="Видалити групу">✕</button></div>`).join('')||'<div class="hint" style="margin:0 0 6px">Груп ще немає.</div>'}
   <button class="btn sm" id="addGrp">+ Додати групу</button></div>
  <div class="card"><h2 class="set-h">Категорії витрат</h2>
-  <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати.</p>
-  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><label class="fx" title="Постійна витрата (для точки беззбитковості)"><input type="checkbox" data-fixed="${esc(c.id)}" ${isFixedCat(c.id)?'checked':''}> пост.</label><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button>${isFixedCat(c.id)?`<label class="catamt"><span>Щомісячна сума, ₴ <small>(для беззбитковості)</small></span><input class="pr" data-famt="${esc(c.id)}" inputmode="numeric" placeholder="0" value="${c.amt>0?esc(c.amt):''}"></label>`:''}</div>`).join('')}
+  <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати. Щомісячна сума (необов’язково): точка беззбитковості бере її або фактичні витрати місяця, якщо вони більші. Усі витрати поточного місяця враховуються самі.</p>
+  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><input class="pr" data-famt="${esc(c.id)}" inputmode="numeric" placeholder="сума, ₴" aria-label="Щомісячна сума: ${esc(c.name)}" title="Щомісячна сума (необов’язково)" value="${c.amt>0?esc(c.amt):''}"><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button></div>`).join('')}
   <button class="btn sm" id="addCat">+ Додати категорію</button></div>
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Працівники</h2>
   <p class="set-p">Тут ви створюєте майстрів і працівників, даєте їм вхід на сайт та визначаєте, які розділи вони бачать і що можуть робити. Майстри з’являються у виборі в записі.</p>
@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4k</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4l</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
