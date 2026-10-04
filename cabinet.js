@@ -41,7 +41,7 @@ function renderCabinet(){
  const dTxt=delta==null?'':`<span class="cab-d ${delta>=0?'up':'dn'}">${delta>=0?'▲':'▼'} ${Math.abs(delta)}% до минулого місяця</span>`;
  const hero=D.pct
   ?`<div class="card cab-hero"><span class="cab-l">Мій заробіток</span><b class="cab-big">${money(D.earn)}</b><div class="cab-s">${D.pct}% від виручки ${money(D.rev)} ${dTxt}</div>
-    ${D.paid!=null?`<div class="sumline" style="margin:10px 0 0"><span>Виплачено: <b>${money(D.paid)}</b></span><span>${D.earn-D.paid>0?'До виплати: <b>'+money(D.earn-D.paid)+'</b>':'Переплата: <b>'+money(D.paid-D.earn)+'</b>'}</span></div>`:''}</div>`
+    ${D.paid!=null?`<div class="sumline" style="margin:10px 0 0"><span>Виплачено: <b>${money(D.paid)}</b></span><span>${D.earn-D.paid>0?'До виплати: <b>'+money(D.earn-D.paid)+'</b>':D.paid>D.earn?'Переплата: <b>'+money(D.paid-D.earn)+'</b>':'Розраховано'}</span></div>`:''}</div>`
   :`<div class="card cab-hero"><span class="cab-l">Виручка по моїх записах</span><b class="cab-big">${money(D.rev)}</b><div class="cab-s">Відсоток не задано. Його виставляє адміністратор. ${dTxt}</div></div>`;
  const tiles=`<div class="tiles"><div><span>Візитів</span><b>${D.n}</b></div><div><span>Середній чек</span><b>${D.avg?money(Math.round(D.avg)):'—'}</b></div><div><span>Клієнтів</span><b>${D.clients}</b></div>
   <div><span>Годин роботи</span><b>${D.hours?(Math.round(D.hours*10)/10).toString().replace('.',','):'0'}</b></div><div><span>Нових клієнтів</span><b>${D.newCl}</b></div><div><span>Попереду</span><b>${D.up.length}</b></div>

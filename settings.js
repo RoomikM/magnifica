@@ -56,8 +56,8 @@ function renderSettings(force){
  if(!force&&el.contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
  const sv=cfgServices(),ct=cfgCats(),skin=document.documentElement.dataset.skin,mp=lsGet('magnifica-mode','auto');
  const staffRows=state.staff.map(s=>`<button class="cl" data-staff="${esc(s.id)}"><span class="av">${esc(initials(s.name))}</span>
-  <span class="cl-m"><span class="cl-n">${esc(s.name)}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
-  <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button>`).join('');
+  <span class="cl-m"><span class="cl-n">${esc(s.name)}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.owner?' · акаунт власника':s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
+  <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button>`).join('');
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
   <p class="set-p">Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
@@ -71,7 +71,7 @@ function renderSettings(force){
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Працівники</h2>
   <p class="set-p">Тут ви створюєте майстрів і працівників, даєте їм вхід на сайт та визначаєте, які розділи вони бачать і що можуть робити. Майстри з’являються у виборі в записі.</p>
   ${staffRows||'<div class="hint" style="margin:0 0 10px">Працівників ще немає.</div>'}
-  <button class="btn sm" id="addStaff">+ Додати працівника</button></div>
+  <button class="btn sm" id="addStaff">+ Додати працівника</button>${state.user&&!state.staff.some(x=>x.id===state.user.uid)?' <button class="btn sm" id="addSelf" title="Ви працюєте майстром під власним входом: новий акаунт не створюється">+ Я теж працюю майстром</button>':''}</div>
  ${extrasSettingsHtml()}
  <div class="card"><h2 class="set-h">Вигляд</h2>
   <p class="set-p">Режим за замовчуванням визначається автоматично за шириною екрана.</p>
@@ -112,6 +112,7 @@ const copyAccess=s=>copyText(accessText(s),s.pw?'Доступ скопійова
 function openStaff(id){
  if(!isOwner())return;
  const ex=id?state.staff.find(s=>s.id===id):null;
+ if(ex&&ex.owner){openSelf(ex);return}
  const s=ex?JSON.parse(JSON.stringify(ex)):{id:'',name:'',role:'',master:true,active:true,perms:{...Object.fromEntries(PERM_PRESETS.master.perms.map(k=>[k,true]))},pay:null,created:Date.now()};
  if(!s.perms)s.perms={};
  const pay=s.pay||{freq:'',amount:0,start:todayKey()};
@@ -220,6 +221,36 @@ function openStaff(id){
  });
 }
 
+/* ---------- власник теж працює майстром (під власним входом, без нового акаунта) ---------- */
+function openSelf(ex){
+ if(!isOwner()||!state.user)return;
+ const uid=state.user.uid,nm0=ex?ex.name:String((state.user.email||'').split('@')[0]||'').replace(/^./,c=>c.toUpperCase());
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Мій профіль майстра':'Я теж майстер'}</h2>${closeBtn}</div>
+  <div class="note">Це ваш власний вхід (${esc(state.user.email||'')}). Новий акаунт не створюється: ви лишаєтесь адміністратором з повним доступом, а в записах зʼявляєтесь у виборі майстра, і у вас є вкладка «Мій кабінет».</div>
+  <label class="lf"><span>Ім’я в записах</span><input id="sf-name" value="${esc(nm0)}" maxlength="60" autocomplete="off"></label>
+  <label class="lf"><span>Посада</span><input id="sf-role" value="${esc(ex?ex.role||'':'адміністратор')}" maxlength="60" autocomplete="off"></label>
+  <label class="chk"><input type="checkbox" id="sf-master" ${!ex||ex.master?'checked':''}> Майстер: приймаю клієнтів</label>
+  <label class="lf"><span>% від виручки (для кабінету та вкладки «Майстри»)</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
+  <div class="err" id="sf-err" role="alert" hidden></div>
+  <div class="actions">${ex?'<button class="btn danger" id="sf-del">Прибрати зі списку</button>':''}<button class="btn primary" id="sf-save">Зберегти</button></div>`);
+ digitsOnly($('sf-pct'));
+ const err=m=>{const e=$('sf-err');e.textContent=m;e.hidden=!m};
+ if(ex)arm($('sf-del'),'Прибрати зі списку',async()=>{
+  await Store.deleteStaff(uid);await syncPeople(state.staff.filter(x=>x.id!==uid));closeSheet();toast('Вас прибрано зі списку майстрів');
+ });
+ $('sf-save').addEventListener('click',async()=>{
+  const name=$('sf-name').value.trim();if(!name){err('Вкажіть ім’я.');return}
+  err('');const b=$('sf-save');b.disabled=true;b.textContent='Зберігаю…';
+  try{
+   const obj={id:uid,name,role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
+    pct:Math.min(100,numOf($('sf-pct').value)),pay:null,created:ex?ex.created:Date.now()};
+   await Store.saveStaff(uid,obj);
+   await syncPeople(state.staff.filter(x=>x.id!==uid).concat([obj]));
+   closeSheet();toast('Збережено');
+  }catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
+ });
+}
+
 /* ---------- сума за день вручну (старий формат) ---------- */
 function openDay(key){
  if(state.status!=='ready'||!isOwner())return;
@@ -324,6 +355,7 @@ function initSettings(){
   if(t.closest('#addSvc')){cfgDoc().services.push({id:'s'+newId().slice(0,8),name:'Нова послуга',price:0});saveCfg();renderSettings(true);const r=[...sett.querySelectorAll('.setrow[data-sid] .nm')].pop();if(r){r.focus();r.select()}return}
   if(t.closest('#addCat')){cfgDoc().expCats.push({id:'c'+newId().slice(0,8),name:'Нова категорія'});saveCfg();renderSettings(true);const r=[...sett.querySelectorAll('.setrow[data-cid] .nm')].pop();if(r){r.focus();r.select()}return}
   if(t.closest('#addStaff')){openStaff();return}
+  if(t.closest('#addSelf')){openSelf();return}
   if((b=t.closest('[data-staff]'))){openStaff(b.dataset.staff);return}
   if((b=t.closest('.skin-btn'))){setSkin(b.dataset.skin);return}
   if((b=t.closest('.seg button[data-mode]'))){lsSet('magnifica-mode',b.dataset.mode);applyMode();renderSettings(true);return}

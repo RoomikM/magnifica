@@ -89,7 +89,7 @@ function canTab(t){
  if(t==='clients')return can('clientsView');
  if(t==='expenses')return can('expView')||can('salaryView');
  if(t==='masters')return can('stats');
- if(t==='cabinet')return !isOwner()&&!!state.me&&!!state.me.master&&(canView()||can('stats'));
+ if(t==='cabinet')return(!isOwner()||!!(state.me&&state.me.owner))&&!!state.me&&!!state.me.master&&(canView()||can('stats'));
  if(t==='settings')return isOwner();
  return false;
 }
@@ -327,7 +327,7 @@ function applyMode(){
 }
 function updateNav(){
  document.querySelectorAll('#nav button,#gear').forEach(b=>{b.hidden=!canTab(b.dataset.tab)});
- if(!canTab(state.tab)){const f=['cabinet','overview','records','clients','expenses','masters','settings'].find(canTab);if(f)setTab(f)}
+ if(!canTab(state.tab)){const f=[...(isOwner()?[]:['cabinet']),'overview','records','clients','expenses','masters','settings'].find(canTab);if(f)setTab(f)}
 }
 function fabInfo(){
  const t=state.tab;

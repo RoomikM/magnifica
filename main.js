@@ -8,7 +8,7 @@ $('sheet').addEventListener('click',e=>{if(e.target.closest('[data-close]'))clos
 $('profit').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(b){state.ui.range=b.dataset.range;renderAll()}});
 
 /* логотип → головна */
-const goHome=()=>{const t=['cabinet','overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
+const goHome=()=>{const t=[...(isOwner()?[]:['cabinet']),'overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
 $('brandHome').addEventListener('click',goHome);
 $('brandHome').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}});
 
@@ -156,7 +156,7 @@ addEventListener('error',e=>{
  const ready=()=>{if(state.status!=='ready'){state.status='ready'}renderAll()};
  const upd=k=>v=>{state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
  function startData(me,uid){
-  const staff=!!me;
+  const staff=!!me&&!me.owner;
   state.me=me;state.role=staff?'staff':'owner';state.perms=staff?(me.perms||{}):{};
   stopData();
   if(staff&&me.active===false){state.status='denied';renderAll();return}
@@ -179,7 +179,8 @@ addEventListener('error',e=>{
   if(!user){state.status='loading';setView('login');return}
   state.status='loading';setView('app');renderAll();
   unsubMe=Store.subscribeMe(user.uid,me=>{
-   const s=JSON.stringify(me?[me.active,me.perms]:null);
+   if(me&&me.owner&&sig==='own'){state.me=me;if(state.status==='ready')renderAll();return}
+   const s=me&&me.owner?'own':JSON.stringify(me?[me.active,me.perms]:null);
    if(s===sig)return;sig=s;
    if(me){const staff0=state.staff;resetData();state.staff=staff0}
    startData(me,user.uid);
