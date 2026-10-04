@@ -149,7 +149,7 @@ function openAppt(init){
   <div class="slots" id="p-slots" role="group" aria-label="Вільні години"></div>
   <div class="hint" id="p-tc" style="margin:4px 0 0"></div>
   <div class="lf acw"><span>Клієнт (ПІБ)</span><input id="p-name" autocomplete="off" placeholder="почніть вводити ім’я або телефон" value="${esc(a.name)}" maxlength="80"><div class="ac" id="p-ac" hidden></div><div class="cinfo" id="p-ci" hidden></div></div>
-  <label class="lf"><span>Телефон</span><input id="p-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="необов’язково" value="${esc(a.phone)}" maxlength="24"></label>
+  <label class="lf ph-f"><span>Телефон</span><input id="p-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="необов’язково" value="${esc(a.phone)}" maxlength="24"></label>
   ${ms.length||lockM?`<label class="lf"><span>Майстер</span><select id="p-m" ${lockM?'disabled':''}><option value="">— не вказано —</option>${ms.map(m=>`<option value="${esc(m.id)}" ${m.id===a.m?'selected':''}>${esc(m.name)}</option>`).join('')}${a.m&&!ms.some(m=>m.id===a.m)?`<option value="${esc(a.m)}" selected>${esc(a.mn||personName(a.m)||'Майстер')}</option>`:''}</select></label>`:''}
   <div class="lbl2">Роботи</div><div class="chips" id="p-chips"></div>
   <select class="more" id="p-more" aria-label="Інші роботи"></select>
@@ -231,7 +231,7 @@ function openAppt(init){
   const res=state.clients.filter(c=>c.name.toLowerCase().includes(q)||(dq.length>=3&&digitsOf(c.phone).includes(dq)))
    .sort((x,y)=>(y.name.toLowerCase().startsWith(q)-x.name.toLowerCase().startsWith(q))||((st.get(y.id)||{}).visits||0)-((st.get(x.id)||{}).visits||0)).slice(0,6);
   if(!res.length){hideAc();return}
-  ac.innerHTML=res.map(c=>`<button type="button" class="ac-i" data-cid="${esc(c.id)}"><b>${esc(c.name)}</b><span>${esc(c.phone||'без телефону')} · ${esc(clientBrief(c,st.get(c.id)))}</span></button>`).join('');
+  ac.innerHTML=res.map(c=>`<button type="button" class="ac-i" data-cid="${esc(c.id)}"><b>${esc(c.name)}</b><span>${phoneRestricted()?'':esc(c.phone||'без телефону')+' · '}${esc(clientBrief(c,st.get(c.id)))}</span></button>`).join('');
   ac.hidden=false;
  };
  const pick=c=>{

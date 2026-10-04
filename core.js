@@ -30,7 +30,7 @@ const TITLES={
 const PERM_DEFS=[
  ['Статистика',[['stats','Огляд, місячна, тижнева, по днях']]],
  ['Записи',[['apptView','Бачити всі записи'],['apptOwn','Бачити лише свої записи'],['apptAdd','Додавати записи'],['apptEdit','Редагувати записи'],['apptDel','Видаляти записи']]],
- ['Клієнти',[['clientsView','Бачити базу клієнтів'],['clientsEdit','Редагувати клієнтів'],['clientsDel','Видаляти клієнтів']]],
+ ['Клієнти',[['clientsView','Бачити базу клієнтів'],['phoneView','Бачити телефони клієнтів'],['clientsEdit','Редагувати клієнтів'],['clientsDel','Видаляти клієнтів']]],
  ['Фінанси',[['expView','Бачити витрати'],['expEdit','Вносити й змінювати витрати'],['salaryView','Бачити виплати зарплат'],['salaryEdit','Вносити й змінювати виплати']]]
 ];
 const PERM_PRESETS={
@@ -452,6 +452,7 @@ function renderAll(){
  put('status',statusCard());
  if(!ready){$('period').textContent='—';updateFab();return}
  updateNav();
+ document.documentElement.classList.toggle('nophone',phoneRestricted());
  SV=svList();
  const D=compute(),S=D.summary;
  SVT=SV.filter(s=>S.services[s.id].amount>0);if(!SVT.length)SVT=SV.filter(s=>!s.archived);
@@ -481,3 +482,16 @@ function renderAll(){
  renderRecords();renderClients();renderMoney(D);renderMasters();if(typeof renderCabinet==='function')renderCabinet();renderSettings(false);
  updateFab();
 }
+
+/* телефони клієнтів: працівник без права phoneView їх не бачить (у пам'яті стираються, при збереженні старі значення повертаються) */
+const phoneRestricted=()=>!isOwner()&&!(state.perms&&state.perms.phoneView);
+const HIDDEN_PH={a:{},c:{},w:{}};
+function stripPhones(kind,list){
+ if(!phoneRestricted()||!Array.isArray(list))return list;
+ const H=HIDDEN_PH[kind];
+ return list.map(x=>{if(x&&x.phone){H[x.id]=x.phone;return {...x,phone:''}}return x});
+}
+[['saveAppt','a'],['saveClient','c'],['saveWait','w']].forEach(([fn,kind])=>{
+ const f=Store[fn];if(!f)return;
+ Store[fn]=(id,d)=>{if(phoneRestricted()&&d&&typeof d==='object')d={...d,phone:HIDDEN_PH[kind][id]||''};return f.call(Store,id,d)};
+});

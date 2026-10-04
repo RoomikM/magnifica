@@ -567,3 +567,4 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 .set-grid>[hidden]{display:none!important}
 .kick-row{display:flex;justify-content:center;margin:6px 0 20px}
 .kick-row .btn{opacity:.85}
+html.nophone .ph-f{display:none!important}

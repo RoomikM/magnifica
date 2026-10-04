@@ -172,7 +172,7 @@ addEventListener('error',e=>{
  let unsubData=null,unsubMe=null,sig='';
  const stopData=()=>{if(unsubData){unsubData();unsubData=null}};
  const ready=()=>{if(state.status!=='ready'){state.status='ready'}renderAll()};
- const upd=k=>v=>{state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
+ const upd=k=>v=>{if(k==='appts')v=stripPhones('a',v);else if(k==='clients')v=stripPhones('c',v);else if(k==='wait')v=stripPhones('w',v);state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
  function startData(me,uid){
   const staff=!!me&&!me.owner;
   state.me=me;state.role=staff?'staff':'owner';state.perms=staff?(me.perms||{}):{};

@@ -70,7 +70,7 @@ function clientsListHtml(){
  l.sort(by[u.csort]||by.name);
  if(!l.length)return `<div class="empty">${state.clients.length?'Нікого не знайдено':'Клієнтів ще немає. Вони додаються автоматично при створенні запису, або натисніть «Додати клієнта».'}</div>`;
  return l.slice(0,500).map(({c,s})=>`<button class="cl" data-cid="${esc(c.id)}"><span class="av">${esc(initials(c.name))}</span>
-  <span class="cl-m"><span class="cl-n">${esc(c.name)}</span><span class="cl-s">${esc(c.phone||'без телефону')} · ${esc(clientBrief(c,s))}</span></span><span class="cl-b">${badges(s)}</span></button>`).join('');
+  <span class="cl-m"><span class="cl-n">${esc(c.name)}</span><span class="cl-s">${phoneRestricted()?'':esc(c.phone||'без телефону')+' · '}${esc(clientBrief(c,s))}</span></span><span class="cl-b">${badges(s)}</span></button>`).join('');
 }
 function renderClients(){
  const el=$('clients');if(!el)return;
@@ -97,7 +97,7 @@ function openClient(idOrObj,opt){
  const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'';
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Клієнт':'Новий клієнт'}</h2>${closeBtn}</div>
   <label class="lf"><span>ПІБ</span><input id="c-name" value="${esc(c.name)}" maxlength="80" autocomplete="off"></label>
-  <div class="fgrid" style="grid-template-columns:1.2fr 1fr"><label class="lf"><span>Телефон</span><input id="c-phone" type="tel" inputmode="tel" value="${esc(c.phone)}" maxlength="24" autocomplete="off"></label>
+  <div class="fgrid" style="grid-template-columns:1.2fr 1fr"><label class="lf ph-f"><span>Телефон</span><input id="c-phone" type="tel" inputmode="tel" value="${esc(c.phone)}" maxlength="24" autocomplete="off"></label>
    <label class="lf"><span>День народження</span><input id="c-bd" type="date" value="${esc(c.bd||'')}"></label></div>
   ${c.phone?`<div style="margin:-4px 0 10px"><a class="btn sm" href="tel:${esc(digitsOf(c.phone)?'+'.concat(digitsOf(c.phone).replace(/^0/,'380')):c.phone)}">Подзвонити</a></div>`:''}
   <label class="lf"><span>Нотатка (вподобання, особливості)</span><textarea id="c-note" rows="2" maxlength="400">${esc(c.note||'')}</textarea></label>

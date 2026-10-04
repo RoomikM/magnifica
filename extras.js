@@ -65,7 +65,7 @@ function openWait(){
   <div id="w-list">${list.length?list.map(w=>`<div class="exrow" style="cursor:default"><div><div class="t">${esc(w.name)}</div><div class="m">${w.d?'на '+full(w.d):'будь-який день'}${w.phone?' · '+esc(w.phone):''}${w.note?' · '+esc(w.note):''}</div></div>${edit?`<button class="rm" data-wdel="${esc(w.id)}" aria-label="Прибрати">✕</button>`:''}</div>`).join(''):'<div class="empty">Список порожній</div>'}</div>
   ${edit?`<div class="lbl2" style="margin-top:14px">Додати</div>
   <label class="lf"><span>Клієнт</span><input id="w-name" list="w-dl" autocomplete="off" maxlength="80" placeholder="ім’я"></label><datalist id="w-dl">${state.clients.slice(0,300).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
-  <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf"><span>Телефон</span><input id="w-phone" type="tel" inputmode="tel" maxlength="24"></label>
+  <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf ph-f"><span>Телефон</span><input id="w-phone" type="tel" inputmode="tel" maxlength="24"></label>
    <label class="lf"><span>Бажана дата (не обов’язково)</span><input id="w-d" type="date"></label></div>
   <label class="lf"><span>Примітка</span><input id="w-note" maxlength="120" placeholder="наприклад: після 16:00, манікюр"></label>
   <div class="err" id="w-err" hidden></div><div class="actions"><button class="btn primary" id="w-add">Додати в список</button></div>`:''}`);
