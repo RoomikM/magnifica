@@ -56,6 +56,8 @@ const bdNext=bd=>{ // днів до найближчого дня народже
  if(n<t)n=new Date(Date.UTC(y+1,+bd.slice(5,7)-1,+bd.slice(8,10)));
  return Math.round((n-t)/864e5);
 };
+const lapseW=()=>(state.cfg&&+state.cfg.lapseWeeks)||6;
+const isLapsed=s=>s.visits>0&&!s.upcoming&&s.last&&s.last<addDays(todayKey(),-lapseW()*7);
 function clientsListHtml(){
  const u=state.ui,q=u.cq.trim().toLowerCase(),dq=digitsOf(q),st=clientStatsMap();
  let l=state.clients.map(c=>({c,s:st.get(c.id)}));
@@ -63,6 +65,7 @@ function clientsListHtml(){
  if(u.cflt==='regular')l=l.filter(x=>x.s.visits>=4);
  else if(u.cflt==='new')l=l.filter(x=>x.s.visits<=1);
  else if(u.cflt==='risk')l=l.filter(x=>x.s.noshow>=1);
+ else if(u.cflt==='lapsed')l=l.filter(x=>isLapsed(x.s));
  const by={name:(a,b)=>a.c.name.localeCompare(b.c.name,'uk'),last:(a,b)=>(b.s.last||'').localeCompare(a.s.last||''),visits:(a,b)=>b.s.visits-a.s.visits,spent:(a,b)=>b.s.spent-a.s.spent};
  l.sort(by[u.csort]||by.name);
  if(!l.length)return `<div class="empty">${state.clients.length?'Нікого не знайдено':'Клієнтів ще немає. Вони додаються автоматично при створенні запису, або натисніть «Додати клієнта».'}</div>`;
@@ -74,15 +77,15 @@ function renderClients(){
  if(!can('clientsView')){el.innerHTML='';return}
  const u=state.ui;
  const bds=state.clients.map(c=>({c,n:bdNext(c.bd)})).filter(x=>x.n!=null&&x.n<=30).sort((a,b)=>a.n-b.n);
- const bd=bds.length?`<div class="card"><h2>Найближчі дні народження</h2><div class="caption">Протягом 30 днів</div>${bds.map(x=>`<button class="exrow" data-cid="${esc(x.c.id)}"><div><div class="t">${esc(x.c.name)}</div><div class="m">${x.c.bd.slice(8,10)}.${x.c.bd.slice(5,7)}${x.c.phone?' · '+esc(x.c.phone):''}</div></div><div class="a">${x.n===0?'сьогодні':'через '+x.n+' дн.'}</div></button>`).join('')}</div>`:'';
+ const bd=bds.length?`<div class="card"><h2>Найближчі дні народження</h2><div class="caption">Протягом 30 днів</div>${bds.map(x=>`<button class="exrow" data-cid="${esc(x.c.id)}" data-msg="bd"><div><div class="t">${esc(x.c.name)}</div><div class="m">${x.c.bd.slice(8,10)}.${x.c.bd.slice(5,7)}${x.c.phone?' · '+esc(x.c.phone):''}</div></div><div class="a">${x.n===0?'сьогодні':'через '+x.n+' дн.'}</div></button>`).join('')}</div>`:'';
  el.innerHTML=`<div class="tools"><input class="search" id="cq" type="search" placeholder="Пошук: ім’я, телефон, нотатка" value="${esc(u.cq)}" autocomplete="off"></div>
   <div class="tools"><div class="seg" role="group" aria-label="Сортування">${[['name','Ім’я'],['last','Остання'],['visits','Візити'],['spent','Сума']].map(([k,n])=>`<button data-cs="${k}" aria-pressed="${u.csort===k}">${n}</button>`).join('')}</div>
-   <div class="seg" role="group" aria-label="Фільтр">${[['all','Усі'],['regular','Постійні'],['new','Нові'],['risk','Пропуски']].map(([k,n])=>`<button data-cf="${k}" aria-pressed="${u.cflt===k}">${n}</button>`).join('')}</div></div>
+   <div class="seg" role="group" aria-label="Фільтр">${[['all','Усі'],['regular','Постійні'],['new','Нові'],['risk','Пропуски'],['lapsed','Давно не були ('+state.clients.filter(c=>isLapsed(clientStatsMap().get(c.id)||{})).length+')']].map(([k,n])=>`<button data-cf="${k}" aria-pressed="${u.cflt===k}">${n}</button>`).join('')}</div></div>
   <div class="sumline"><span>Клієнтів: <b>${state.clients.length}</b></span></div>${bd}
   <div class="card" id="clList">${clientsListHtml()}</div>`;
 }
 
-function openClient(idOrObj){
+function openClient(idOrObj,opt){
  if(state.status!=='ready')return;
  const ex=typeof idOrObj==='string'?state.clients.find(c=>c.id===idOrObj):null;
  if(!ex&&!can('clientsEdit'))return;
@@ -106,6 +109,15 @@ function openClient(idOrObj){
   ${st.reliab!=null?`<div class="sumline"><span>Надійність: <b>${st.reliab}%</b> відвідано з тих, що не скасовано заздалегідь</span></div>`:''}
   ${st.master?`<div class="sumline"><span>Улюблений майстер: <b>${esc(st.master)}</b></span></div>`:''}
   ${st.top.length?`<div class="chips" style="margin-bottom:8px">${st.top.map(([n,k])=>`<span class="chip" style="cursor:default">${esc(n)}<small>×${k}</small></span>`).join('')}</div>`:''}`:''}
+  ${ex?`<div class="lbl2" style="margin-top:6px">Дії</div>
+  ${can('apptAdd')&&st&&st.list.length?`<div class="btnrow" style="align-items:center;margin-bottom:8px"><button class="btn sm primary" id="c-rep" type="button">Записати знову через</button><select class="mini" id="c-wk">${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${n===4?'selected':''}>${n} тиж.</option>`).join('')}</select></div>`:''}
+  ${c.phone?`<div data-vars='${esc(JSON.stringify({name:c.name,first:String(c.name).trim().split(/\s+/)[0]}))}' id="c-msgbox">${msgPicker(c.phone,['bd','lapse'],{name:c.name,first:String(c.name).trim().split(/\s+/)[0]},!!(opt&&opt.msg)||(st&&isLapsed(st))||(bdNext(c.bd)!=null&&bdNext(c.bd)<=7))}</div>`:''}`:''}
+  <div class="lbl2" style="margin-top:12px">Абонемент</div>
+  <div class="fgrid" style="grid-template-columns:1.4fr 1fr 1fr 1fr"><label class="lf"><span>Назва</span><input id="c-sn" value="${esc((c.sub||{}).name||'')}" maxlength="40" placeholder="напр. 10 манікюрів"></label>
+   <label class="lf"><span>Візитів</span><input id="c-sv" inputmode="numeric" value="${(c.sub||{}).visits||''}"></label>
+   <label class="lf"><span>Ціна, ₴</span><input id="c-sp" inputmode="numeric" value="${(c.sub||{}).price||''}"></label>
+   <label class="lf"><span>Залишок</span><input id="c-sl" inputmode="numeric" value="${(c.sub||{}).left!=null?c.sub.left:''}"></label></div>
+  <div class="hint" style="margin:-4px 0 10px">Якщо в клієнта є абонемент, у записі з’являється позначка «Абонемент»: візит списується, а в дохід іде ціна абонемента, поділена на кількість візитів.</div>
   <div class="lbl2">Відгуки й нотатки про клієнта</div>
   <div id="c-revs"></div>
   ${ro?'':`<div class="revadd"><textarea id="c-rt" rows="2" placeholder="Новий відгук або нотатка" maxlength="400"></textarea><div class="revrow"><select id="c-rr" aria-label="Оцінка"><option value="0">без оцінки</option>${[5,4,3,2,1].map(n=>`<option value="${n}">${'★'.repeat(n)}</option>`).join('')}</select><button class="btn sm" id="c-radd" type="button">Додати</button></div></div>`}
@@ -117,6 +129,15 @@ function openClient(idOrObj){
   $('c-revs').innerHTML=c.reviews.length?c.reviews.slice().reverse().map((r,i)=>{const idx=c.reviews.length-1-i;return `<div class="rev"><div><b>${full(r.d)}</b>${r.r?` <span class="stars">${stars(r.r)}</span>`:''}</div><div>${esc(r.text)}</div>${ro?'':`<button type="button" class="rm" data-rr="${idx}" aria-label="Видалити">✕</button>`}</div>`}).join(''):'<div class="hint" style="margin:0 0 8px">Поки що порожньо.</div>';
  };
  drawRevs();
+ [$('c-sv'),$('c-sp'),$('c-sl')].forEach(i=>i&&digitsOnly(i));
+ if(ex&&$('c-msgbox'))$('c-msgbox').querySelector('details').dataset.vars=$('c-msgbox').dataset.vars;
+ if($('c-rep'))$('c-rep').addEventListener('click',()=>{
+  const wk=+$('c-wk').value||4,last=st.list.filter(a=>isOk(a)&&a.items&&a.items.length).slice(-1)[0]||st.list[st.list.length-1];
+  const base=last&&last.d>todayKey()?last.d:todayKey(),d=addDays(base,wk*7),cur=svList();
+  closeSheet();
+  openAppt({d,t:last?last.t:undefined,dur:last?last.dur:undefined,m:last?last.m:undefined,cid:c.id,name:c.name,phone:c.phone,
+   items:((last&&last.items)||[]).map(i=>{const s=cur.find(x=>x.id===i.sid&&!x.archived);return{sid:i.sid,name:s?s.name:i.name,price:s?s.price:i.price}})});
+ });
  if(ro)document.querySelectorAll('#sheetPanel input,#sheetPanel textarea').forEach(el=>{el.disabled=true});
  else{
   $('c-revs').addEventListener('click',e=>{const b=e.target.closest('[data-rr]');if(b){c.reviews.splice(+b.dataset.rr,1);drawRevs()}});
@@ -128,7 +149,8 @@ function openClient(idOrObj){
    const name=$('c-name').value.trim();
    if(!name){err('Вкажіть ім’я клієнта.');return}
    const t=$('c-rt').value.trim();if(t){c.reviews.push({d:todayKey(),text:t,r:+$('c-rr').value||0})}
-   const obj={id:c.id,name,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now()};
+   const sn=$('c-sn').value.trim(),sv=numOf($('c-sv').value),sp=numOf($('c-sp').value),sl=$('c-sl').value===''?sv:Math.min(sv||9999,numOf($('c-sl').value));
+   const obj={id:c.id,name,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
    const b=$('c-save');b.disabled=true;b.textContent='Зберігаю…';
    try{const r=await Store.saveClient(obj.id,obj);closeSheet();savedToast(r,'Клієнта збережено')}
    catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}

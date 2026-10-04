@@ -39,6 +39,7 @@
       <label class="lf" for="l-pass"><span>Пароль</span><input id="l-pass" name="password" type="password" autocomplete="current-password" required></label>
       <div class="err" id="l-err" role="alert" hidden></div>
       <button class="btn primary wide" id="l-btn" type="submit">Увійти</button>
+      <button class="btn wide" id="installLogin" type="button" hidden>Встановити застосунок</button>
       <p class="hint" id="installHint" hidden>Щоб додати на екран айфона: «Поділитися» → «На початковий екран».</p>
     </form>
     <div id="cfgMsg">
@@ -73,6 +74,7 @@
       <button data-tab="records" aria-pressed="false">Записи</button>
       <button data-tab="clients" aria-pressed="false">Клієнти</button>
       <button data-tab="expenses" aria-pressed="false">Витрати</button>
+      <button data-tab="masters" aria-pressed="false">Майстри</button>
       <button data-tab="monthly" aria-pressed="false">Місячна</button>
       <button data-tab="weekly" aria-pressed="false">Тижнева</button>
       <button data-tab="daily" aria-pressed="false">По днях</button>
@@ -87,6 +89,7 @@
 
     <section id="overview" class="section active">
       <div id="profit"></div>
+      <div id="breakeven"></div>
       <div class="kpis" id="kpis"></div>
       <div class="service-grid" id="services"></div>
       <div id="mastersBox"></div>
@@ -99,6 +102,7 @@
 
     <section id="records" class="section"></section>
     <section id="clients" class="section"></section>
+    <section id="masters" class="section"></section>
     <section id="expenses" class="section"></section>
 
     <section id="monthly" class="section">
@@ -135,6 +139,7 @@
 <script src="money.js"></script>
 <script src="settings.js"></script>
 <script src="logs.js"></script>
+<script src="extras.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

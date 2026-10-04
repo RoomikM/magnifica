@@ -66,19 +66,20 @@ function renderSettings(force){
   <button class="btn sm" id="addSvc">+ Додати послугу</button></div>
  <div class="card"><h2 class="set-h">Категорії витрат</h2>
   <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати.</p>
-  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button></div>`).join('')}
+  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><label class="fx" title="Постійна витрата (для точки беззбитковості)"><input type="checkbox" data-fixed="${esc(c.id)}" ${isFixedCat(c.id)?'checked':''}> пост.</label><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button></div>`).join('')}
   <button class="btn sm" id="addCat">+ Додати категорію</button></div>
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Працівники</h2>
   <p class="set-p">Тут ви створюєте майстрів і працівників, даєте їм вхід на сайт та визначаєте, які розділи вони бачать і що можуть робити. Майстри з’являються у виборі в записі.</p>
   ${staffRows||'<div class="hint" style="margin:0 0 10px">Працівників ще немає.</div>'}
   <button class="btn sm" id="addStaff">+ Додати працівника</button></div>
+ ${extrasSettingsHtml()}
  <div class="card"><h2 class="set-h">Вигляд</h2>
   <p class="set-p">Режим за замовчуванням визначається автоматично за шириною екрана.</p>
   <div class="lbl2">Тема</div><div class="skins" style="margin-bottom:14px">${SKINS.map(([k,n])=>`<button class="skin-btn" data-skin="${k}" aria-pressed="${skin===k}"><span class="swatch ${k}"></span>${n}</button>`).join('')}</div>
-  <div class="lbl2">Режим</div><div class="seg" role="group" aria-label="Режим"><button data-mode="auto" aria-pressed="${mp==='auto'}">Авто</button><button data-mode="phone" aria-pressed="${mp==='phone'}">Телефон</button><button data-mode="desktop" aria-pressed="${mp==='desktop'}">Комп’ютер</button></div></div>
+  <div class="lbl2">Режим</div><div class="seg" role="group" aria-label="Режим"><button data-mode="auto" aria-pressed="${mp==='auto'}">Авто</button><button data-mode="phone" aria-pressed="${mp==='phone'}">Телефон</button><button data-mode="desktop" aria-pressed="${mp==='desktop'}">Комп’ютер</button></div>${installBlockHtml()}</div>
  <div class="card"><h2 class="set-h">Дані</h2>
   <p class="set-p">Копія зберігає все: дні, записи, клієнтів, витрати, виплати, послуги. Корисно робити раз на місяць.</p>
-  <div class="btnrow"><button class="btn sm" id="exJson">Копія (JSON)</button><button class="btn sm" id="exCsv">Таблиця (CSV)</button><button class="btn sm" id="imBtn">Імпорт з файлу</button><button class="btn sm" id="manDay">Внести день сумою</button></div></div>
+  <div class="btnrow"><button class="btn sm" id="exJson">Копія (JSON)</button><button class="btn sm" id="exCsv">Таблиця (CSV)</button><button class="btn sm" id="imBtn">Імпорт з файлу</button><button class="btn sm" id="manDay">Внести день сумою</button><button class="btn sm" id="archBtn">Архів старих записів</button></div></div>
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Логи</h2>
   <p class="set-p">Усі дії користувачів сайту: хто, коли і що створив, змінив чи видалив, а також входи.</p>
   <div id="logBox"></div></div>
@@ -138,9 +139,10 @@ function openStaff(id){
   <div class="fgrid" style="grid-template-columns:1fr 1fr 1fr"><label class="lf"><span>Виплата</span><select id="st-freq"><option value="">не задано</option><option value="day" ${pay.freq==='day'?'selected':''}>щодня</option><option value="week" ${pay.freq==='week'?'selected':''}>щотижня</option><option value="month" ${pay.freq==='month'?'selected':''}>щомісяця</option></select></label>
    <label class="lf"><span>Сума, ₴</span><input id="st-pay" inputmode="numeric" value="${pay.amount||''}" placeholder="0"></label>
    <label class="lf"><span>Рахувати з</span><input id="st-start" type="date" value="${esc(pay.start||todayKey())}"></label></div>
+  <label class="lf"><span>% від виручки майстра (довідково, для вкладки «Майстри»)</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
   <div class="err" id="st-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
- digitsOnly($('st-pay'));
+ digitsOnly($('st-pay'));digitsOnly($('st-pct'));
  const err=m=>{const e=$('st-err');e.textContent=m;e.hidden=!m};
  const showP=()=>{$('st-pbox').hidden=!(hasLogin||($('st-login')&&$('st-login').checked))};
  if(!hasLogin){$('st-login').addEventListener('change',()=>{$('st-lbox').hidden=!$('st-login').checked;showP()})}
@@ -203,7 +205,7 @@ function openStaff(id){
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
-    pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('st-pct').value)),pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
@@ -296,7 +298,7 @@ async function importFile(f){
 function initSettings(){
  const sett=$('settings');
  sett.addEventListener('change',e=>{
-  const row=e.target.closest('.setrow');if(!row)return;
+  const row=e.target.closest('.setrow');if(!row||e.target.matches('[data-fixed]'))return;
   const c=cfgDoc();
   if(row.dataset.sid){
    const s=c.services.find(x=>x.id===row.dataset.sid);if(!s)return;

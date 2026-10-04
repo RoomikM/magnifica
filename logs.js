@@ -18,6 +18,8 @@ const LOG_WRAPS={
  deleteStaff:id=>['Видалено працівника',byId(state.staff,id).name||''],
  saveDay:(k,d)=>['Внесено день',full(k)+' · '+money(Object.values(d.a||{}).reduce((a,b)=>a+(+b||0),0)+(+d.c||0))],
  deleteDay:k=>['Видалено день',isDate(k)?full(k):''],
+ saveWait:(id,d)=>['Лист очікування: додано',d.name+(d.d?' · на '+full(d.d):'')],
+ deleteWait:id=>['Лист очікування: прибрано',byId(state.wait,id).name||''],
  saveCfg:()=>['Змінено налаштування','послуги, категорії або список людей'],
  importSeed:()=>['Імпорт даних','']
 };

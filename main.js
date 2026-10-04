@@ -23,6 +23,7 @@ $('records').addEventListener('click',e=>{
   renderRecords();return;
  }
  if((b=t.closest('[data-d]'))){u.adate=b.dataset.d;u.aview='day';lsSet('magnifica-aview','day');renderRecords();return}
+  if(t.closest('[data-wait]')){openWait();return}
  if((b=t.closest('[data-id]'))){const a=state.appts.find(x=>x.id===b.dataset.id);if(a)openAppt(a);return}
  const col=t.closest('.tl-col');
  if(col&&can('apptAdd')){
@@ -39,7 +40,7 @@ $('clients').addEventListener('click',e=>{
  const t=e.target;let b;
  if((b=t.closest('[data-cs]'))){state.ui.csort=b.dataset.cs;renderClients();return}
  if((b=t.closest('[data-cf]'))){state.ui.cflt=b.dataset.cf;renderClients();return}
- if((b=t.closest('[data-cid]'))){openClient(b.dataset.cid)}
+ if((b=t.closest('[data-cid]'))){openClient(b.dataset.cid,{msg:b.dataset.msg})}
 });
 $('clients').addEventListener('input',e=>{if(e.target.id==='cq'){state.ui.cq=e.target.value;put('clList',clientsListHtml())}});
 
@@ -69,7 +70,7 @@ function rowOpen(e){
 $('dailyTable').addEventListener('click',rowOpen);
 $('dailyTable').addEventListener('keydown',rowOpen);
 
-initSettings();initLogs();installLogging();
+initSettings();initLogs();initExtras();installLogging();
 $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)});
 
 /* ---------- вхід ---------- */
@@ -90,6 +91,7 @@ $('loginForm').addEventListener('submit',async e=>{
  b.disabled=false;b.textContent='Увійти';
 });
 {const bc=$('brandHome').cloneNode(true);bc.removeAttribute('id');bc.removeAttribute('role');bc.removeAttribute('tabindex');bc.style.cursor='default';$('loginBrand').appendChild(bc)}
+$('installLogin').addEventListener('click',doInstall);drawInstall();
 $('installHint').hidden=!(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!navigator.standalone);
 
 /* ---------- маячок про нові записи ---------- */
@@ -118,7 +120,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab
 /* ---------- запуск ---------- */
 function setView(v){document.documentElement.setAttribute('data-view',v)}
 function resetData(){
- state.days=new Map();state.baseline={};state.appts=[];state.exps=[];state.sals=[];state.clients=[];state.staff=[];state.cfg=null;
+ state.days=new Map();state.baseline={};state.appts=[];state.wait=[];state.exps=[];state.sals=[];state.clients=[];state.staff=[];state.cfg=null;
  state.newAppts=0;seenAppts.clear();apptsInit=false;drawBadge();state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
 }
 setSkin(document.documentElement.getAttribute('data-skin')||'night');
@@ -153,12 +155,12 @@ addEventListener('error',e=>{
   unsubData=Store.subscribe({
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
-   appts:l=>{trackNew(l);upd('appts')(l)},exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
+   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
    cfg:c=>{state.cfg=c;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid});
   if(staff&&!stats){state.status='ready';renderAll()}
-  logLogin();
+  logLogin();autoPrune();
  }
  Store.onAuth(user=>{
   stopData();if(unsubMe){unsubMe();unsubMe=null}sig='';

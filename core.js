@@ -22,6 +22,7 @@ const TITLES={
  monthly:['Місячна статистика','Підсумок по місяцях'],
  weekly:['Тижнева статистика','Тижні з понеділка по неділю'],
  daily:['Денна статистика','Історія всіх активних днів'],
+ masters:['Майстри','Записи, виручка й зарплата кожного майстра'],
  settings:['Налаштування','Послуги, працівники, вигляд, дані']
 };
 /* Права працівників: [група, [[ключ, підпис], …]] */
@@ -70,7 +71,7 @@ const digitsOnly=el=>el.addEventListener('input',()=>{el.value=el.value.replace(
 const put=(id,html)=>{const el=$(id);if(el)el.innerHTML=html};
 
 const state={
- days:new Map(),baseline:{},appts:[],exps:[],sals:[],clients:[],staff:[],cfg:null,
+ days:new Map(),baseline:{},appts:[],wait:[],exps:[],sals:[],clients:[],staff:[],cfg:null,
  status:'loading',tab:'overview',user:null,role:'owner',perms:{},me:null,
  ui:{aview:lsGet('magnifica-aview','day'),adate:todayKey(),afilter:'future',aq:'',mf:'',range:'all',emonth:todayKey().slice(0,7),
   exsub:'exp',cq:'',csort:'name',cflt:'all'}
@@ -86,6 +87,7 @@ function canTab(t){
  if(t==='records')return canView()||can('apptAdd');
  if(t==='clients')return can('clientsView');
  if(t==='expenses')return can('expView')||can('salaryView');
+ if(t==='masters')return can('stats');
  if(t==='settings')return isOwner();
  return false;
 }
@@ -106,7 +108,7 @@ function cfgDoc(){
 }
 function saveCfg(){
  const c=cfgDoc();
- return Store.saveCfg({services:c.services,expCats:c.expCats,people:c.people})
+ return Store.saveCfg(JSON.parse(JSON.stringify(c)))
   .then(r=>{if(r==='pending')toast('Збережено на пристрої, синхронізується при з’єднанні')})
   .catch(e=>toast(errText(e)));
 }
@@ -133,6 +135,8 @@ function syncPeople(list){
 }
 
 /* ---------- записи: статуси ---------- */
+/* знижка/абонемент: частка, на яку множаться ціни робіт, щоб суми послуг дорівнювали total */
+function itemFactor(a){const s=(a.items||[]).reduce((t,i)=>t+(+i.price||0),0);return s>0&&a.total!=null&&isFinite(+a.total)?(+a.total)/s:1}
 const isOk=a=>a.st!=='cancel'&&a.st!=='noshow';
 const counted=a=>isOk(a)&&(a.d+' '+a.t)<=nowKey();
 
@@ -152,7 +156,8 @@ function compute(){
  const masterRev=new Map();
  state.appts.filter(counted).forEach(ap=>{
   const r=row(ap.d);
-  (ap.items||[]).forEach(it=>{r.a[it.sid]=(r.a[it.sid]||0)+(+it.price||0);r.c[it.sid]=(r.c[it.sid]||0)+1});
+  const f=itemFactor(ap);
+  (ap.items||[]).forEach(it=>{r.a[it.sid]=(r.a[it.sid]||0)+(+it.price||0)*f;r.c[it.sid]=(r.c[it.sid]||0)+1});
   const mk=ap.m||'—';const mr=masterRev.get(mk)||{name:ap.mn||personName(ap.m)||'Без майстра',sum:0,n:0};
   mr.sum+=(+ap.total||0);mr.n++;masterRev.set(mk,mr);
  });
@@ -320,7 +325,7 @@ function applyMode(){
 }
 function updateNav(){
  document.querySelectorAll('#nav button,#gear').forEach(b=>{b.hidden=!canTab(b.dataset.tab)});
- if(!canTab(state.tab)){const f=['overview','records','clients','expenses','settings'].find(canTab);if(f)setTab(f)}
+ if(!canTab(state.tab)){const f=['overview','records','clients','expenses','masters','settings'].find(canTab);if(f)setTab(f)}
 }
 function fabInfo(){
  const t=state.tab;
@@ -384,6 +389,7 @@ function renderAll(){
   put('monthlyTable',plainTable(D.monthly,r=>`${esc(r.short)}<br>${r.key.slice(0,4)}`));
   put('profitTable',profitTable(D.profitMonths));
  }
- renderRecords();renderClients();renderMoney(D);renderSettings(false);
+ put('breakeven',breakevenHtml(D));
+ renderRecords();renderClients();renderMoney(D);renderMasters();renderSettings(false);
  updateFab();
 }

@@ -67,18 +67,19 @@ function masterSelect(){
  if(ms.length<2&&!state.ui.mf)return '';
  return `<select class="mini" data-mf aria-label="Майстер"><option value="">Усі майстри</option>${ms.map(m=>`<option value="${esc(m.id)}" ${state.ui.mf===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`;
 }
+const waitBtn=()=>{const n=waitActive().length;return `<button class="btn sm" data-wait>Очікування${n?' ('+n+')':''}</button>`};
 function recToolbar(){
  const u=state.ui,v=u.aview;
  const seg=`<div class="seg" role="group" aria-label="Вигляд"><button data-v="day" aria-pressed="${v==='day'}">День</button><button data-v="week" aria-pressed="${v==='week'}">Тиждень</button><button data-v="list" aria-pressed="${v==='list'}">Список</button></div>`;
  if(v==='list'){
   const f=u.afilter;
-  return `<div class="tools">${seg}<div class="seg" role="group" aria-label="Фільтр"><button data-f="future" aria-pressed="${f==='future'}">Майбутні</button><button data-f="past" aria-pressed="${f==='past'}">Минулі</button><button data-f="all" aria-pressed="${f==='all'}">Усі</button></div>${masterSelect()}</div>
+  return `<div class="tools">${seg}<div class="seg" role="group" aria-label="Фільтр"><button data-f="future" aria-pressed="${f==='future'}">Майбутні</button><button data-f="past" aria-pressed="${f==='past'}">Минулі</button><button data-f="all" aria-pressed="${f==='all'}">Усі</button></div>${masterSelect()}${waitBtn()}</div>
    <div class="tools"><input class="search" id="aq" type="search" placeholder="Пошук: ім’я, телефон, робота" value="${esc(u.aq)}" autocomplete="off"></div>`;
  }
  let lbl;
  if(v==='day')lbl=dayLabel(u.adate);
  else{const m=keyOf(mondayOf(u.adate));lbl=full(m).slice(0,5)+' — '+full(addDays(m,6)).slice(0,5)+'.'+addDays(m,6).slice(0,4)}
- return `<div class="tools">${seg}${masterSelect()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button></div>`;
+ return `<div class="tools">${seg}${masterSelect()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button></div>`;
 }
 function recBody(){
  if(!canView())return '<div class="card"><div class="empty">У вас є право лише додавати записи. Перегляд списку вимкнено адміністратором.</div></div>';
@@ -131,8 +132,10 @@ function openAppt(init){
  if(!ex&&!can('apptAdd'))return;
  const ro=!!ex&&!can('apptEdit');
  const d0=(init&&init.d)||todayKey();
- const a=ex?JSON.parse(JSON.stringify(ex)):{d:d0,t:(init&&init.t)||defTime(d0),dur:60,cid:(init&&init.cid)||'',name:(init&&init.name)||'',phone:(init&&init.phone)||'',note:'',items:[],st:'ok',m:defaultMaster()};
+ const a=ex?JSON.parse(JSON.stringify(ex)):{d:d0,t:(init&&init.t)||defTime(d0),dur:(init&&init.dur)||60,cid:(init&&init.cid)||'',name:(init&&init.name)||'',phone:(init&&init.phone)||'',note:'',items:init&&init.items?JSON.parse(JSON.stringify(init.items)):[],st:'ok',m:init&&init.m!=null?init.m:defaultMaster()};
  if(!a.st)a.st='ok';
+ a.subOn=!!a.subUsed;
+ const remHtml=ex&&ex.phone&&isOk(ex)&&(ex.d+' '+ex.t)>=nowKey()?`<details class="remd"><summary>Нагадати клієнту</summary>${msgPanel(ex.phone,fillTpl('rem',apptVars(ex)))}</details>`:'';
  const svs=svList().filter(s=>!s.archived);
  const ms=masters();
  const lockM=!isOwner()&&!!state.perms.apptOwn&&!state.perms.apptView;
@@ -152,10 +155,19 @@ function openAppt(init){
   <div class="lbl2">Статус</div>
   <div class="seg stseg" id="p-st"><button type="button" data-s="ok">Активний</button><button type="button" data-s="cancel">Скасовано</button><button type="button" data-s="noshow">Не прийшов</button></div>
   <div class="note" id="p-cn" hidden></div>
-  <div class="sum"><span>Разом</span><b id="p-total">0&nbsp;₴</b></div>
+  ${remHtml}
+  <div class="discrow"><label class="lf"><span>Знижка, %</span><input id="p-disc" inputmode="numeric" value="${a.disc||''}" placeholder="0" maxlength="3"></label><div id="p-subw"></div></div>
+  <div class="sum"><span>Разом</span><b id="p-total">0&nbsp;₴</b></div><div class="hint" id="p-base" hidden></div>
   <div class="err" id="p-err" role="alert" hidden></div>
   <div class="actions">${ex&&can('apptDel')?'<button class="btn danger" id="p-del">Видалити</button>':''}${ro?'':'<button class="btn primary" id="p-save">Зберегти</button>'}</div>`);
- const total=()=>a.items.reduce((s,i)=>s+(+i.price||0),0);
+ const baseSum=()=>a.items.reduce((s,i)=>s+(+i.price||0),0);
+ const subC=()=>{const c=a.cid&&state.clients.find(x=>x.id===a.cid);return c&&c.sub&&+c.sub.visits>0?c:null};
+ const total=()=>{const c=subC();if(a.subOn&&c)return Math.round((+c.sub.price||0)/c.sub.visits);const d=Math.min(100,Math.max(0,+a.disc||0));return Math.round(baseSum()*(100-d)/100)};
+ const upTotal=()=>{const t=total(),b=baseSum();$('p-total').textContent=money(t);const h=$('p-base');h.hidden=t===b;h.textContent=t===b?'':'До знижки: '+money(b)+(a.subOn?' · за абонементом':'')};
+ const drawSub=()=>{const c=subC(),w=$('p-subw');
+  if(!c||!can('clientsEdit')||(+c.sub.left<=0&&!a.subUsed)){w.innerHTML='';if(a.subOn){a.subOn=false;upTotal()}return}
+  w.innerHTML=`<label class="chk"><input type="checkbox" id="p-sub" ${a.subOn?'checked':''}> Абонемент «${esc(c.sub.name||'')}», залишилось ${+c.sub.left}</label>`;
+ };
  const err=m=>{const e=$('p-err');e.textContent=m;e.hidden=!m};
  const drawChips=()=>{
   const shown=freq.slice();
@@ -168,7 +180,7 @@ function openAppt(init){
  };
  const drawSel=()=>{
   $('p-sel').innerHTML=a.items.map((it,i)=>`<div class="selrow"><span class="sname"><i class="dot" style="background:${colorOf(svIndex(it.sid))}"></i>${esc(it.name)}</span><input data-i="${i}" inputmode="numeric" value="${it.price||''}" placeholder="0" aria-label="Ціна: ${esc(it.name)}"><button class="rm" type="button" data-rm="${i}" aria-label="Прибрати">✕</button></div>`).join('');
-  $('p-total').textContent=money(total());
+  upTotal();
  };
  const addItem=sid=>{const s=svs.find(x=>x.id===sid);if(s&&!a.items.some(i=>i.sid===sid))a.items.push({sid,name:s.name,price:s.price})};
  const showSt=()=>{
@@ -177,7 +189,9 @@ function openAppt(init){
   n.hidden=a.st==='ok';
   n.textContent=a.st==='cancel'?'Запис скасовано заздалегідь: у дохід не входить, у статистиці клієнта рахується як скасування.':a.st==='noshow'?'Клієнт не прийшов: у дохід не входить, у статистиці клієнта рахується як пропуск.':'';
  };
- drawChips();drawSel();showSt();
+ drawChips();drawSel();showSt();drawSub();
+ $('p-disc').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);a.disc=Math.min(100,+e.target.value||0);upTotal()});
+ $('p-subw').addEventListener('change',e=>{if(e.target.id==='p-sub'){a.subOn=e.target.checked;upTotal()}});
  $('p-chips').addEventListener('click',e=>{
   const b=e.target.closest('.chip');if(!b)return;
   const sid=b.dataset.sid,i=a.items.findIndex(x=>x.sid===sid);
@@ -187,7 +201,7 @@ function openAppt(init){
  $('p-more').addEventListener('change',e=>{if(e.target.value){addItem(e.target.value);drawChips();drawSel()}});
  $('p-sel').addEventListener('input',e=>{
   const el=e.target.closest('input');if(!el)return;
-  el.value=el.value.replace(/\D/g,'').slice(0,7);a.items[+el.dataset.i].price=numOf(el.value);$('p-total').textContent=money(total());
+  el.value=el.value.replace(/\D/g,'').slice(0,7);a.items[+el.dataset.i].price=numOf(el.value);upTotal();
  });
  $('p-sel').addEventListener('click',e=>{const b=e.target.closest('.rm');if(!b)return;a.items.splice(+b.dataset.rm,1);drawChips();drawSel()});
  $('p-st').addEventListener('click',e=>{const b=e.target.closest('button');if(b){a.st=b.dataset.s;showSt()}});
@@ -213,12 +227,12 @@ function openAppt(init){
  const pick=c=>{
   a.cid=c.id;$('p-name').value=c.name;a.name=c.name;
   if(c.phone){$('p-phone').value=c.phone;a.phone=c.phone}
-  hideAc();showInfo();
+  hideAc();showInfo();drawSub();upTotal();
  };
  $('p-name').addEventListener('input',e=>{
   a.name=e.target.value;
   const c=a.cid&&state.clients.find(x=>x.id===a.cid);
-  if(c&&c.name!==a.name){a.cid='';showInfo()}
+  if(c&&c.name!==a.name){a.cid='';showInfo();drawSub();upTotal()}
   showAc(a.name);
  });
  $('p-phone').addEventListener('input',e=>{
@@ -229,13 +243,13 @@ function openAppt(init){
  $('p-phone').addEventListener('blur',()=>setTimeout(hideAc,180));
  ac.addEventListener('mousedown',e=>e.preventDefault());
  ac.addEventListener('click',e=>{const b=e.target.closest('.ac-i');if(!b)return;const c=state.clients.find(x=>x.id===b.dataset.cid);if(c)pick(c)});
- $('p-ci').addEventListener('click',e=>{if(e.target.closest('[data-unlink]')){a.cid='';showInfo();$('p-name').focus()}});
+ $('p-ci').addEventListener('click',e=>{if(e.target.closest('[data-unlink]')){a.cid='';showInfo();drawSub();upTotal();$('p-name').focus()}});
  showInfo();
 
  if(ro){
   document.querySelectorAll('#sheetPanel input,#sheetPanel select,#sheetPanel .chip,#sheetPanel #p-st button,#sheetPanel .rm').forEach(el=>{el.disabled=true});
  }
- if(ex&&can('apptDel'))arm($('p-del'),'Видалити',async()=>{await Store.deleteAppt(a.id);closeSheet();toast('Запис видалено')});
+ if(ex&&can('apptDel'))arm($('p-del'),'Видалити',async()=>{if(ex.subUsed)await subAdjust(ex.cid,1);await Store.deleteAppt(a.id);closeSheet();toast('Запис видалено');offerSlot(ex)});
  if(!ro)$('p-save').addEventListener('click',async()=>{
   const d=$('p-d').value,t=$('p-t').value;
   if(!isDate(d)){err('Оберіть дату.');return}
@@ -254,12 +268,18 @@ function openAppt(init){
    a.name=$('p-name').value.trim();a.phone=$('p-phone').value.trim();
    const cid=await resolveClient(a);
    const obj={id:a.id||newId(),d,t,dur,cid,name:a.name,phone:a.phone,m,mn:m?personName(m,a.mn):'',note:$('p-note').value.trim(),
-    items:a.items.map(i=>({sid:i.sid,name:i.name,price:+i.price||0})),total:total(),st:a.st,created:a.created||Date.now()};
+    items:a.items.map(i=>({sid:i.sid,name:i.name,price:+i.price||0})),total:total(),disc:a.subOn?0:(+a.disc||0),subUsed:false,st:a.st,created:a.created||Date.now()};
+   const nowSub=!!(a.subOn&&cid&&a.cid===cid&&subC()&&a.st!=='cancel'&&can('clientsEdit'));
+   obj.subUsed=nowSub;
+   const wasSub=!!(ex&&ex.subUsed);
    if(m)lsSet('magnifica-lastm',m);
    const r=await Store.saveAppt(obj.id,obj);
+   if(wasSub&&(!nowSub||ex.cid!==cid))await subAdjust(ex.cid,1);
+   if(nowSub&&(!wasSub||ex.cid!==cid))await subAdjust(cid,-1);
    state.ui.adate=d;closeSheet();
    if(state.tab==='records'||state.tab==='overview')renderAll();
    savedToast(r,'Запис збережено · '+ddmm(d)+' '+t);
+   if(ex&&isOk(ex)&&obj.st==='cancel')offerSlot(ex);
   }catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
  });
 }
@@ -277,4 +297,11 @@ async function resolveClient(a){
  const obj={id:newId(),name:nm||ph,phone:ph,bd:'',note:'',reviews:[],created:Date.now()};
  await Store.saveClient(obj.id,obj);
  return obj.id;
+}
+
+/* списання/повернення візиту з абонемента клієнта */
+async function subAdjust(cid,delta){
+ const c=state.clients.find(x=>x.id===cid);if(!c||!c.sub)return;
+ const n={...c,sub:{...c.sub,left:Math.max(0,Math.min(+c.sub.visits||99,(+c.sub.left||0)+delta))}};
+ try{await Store.saveClient(c.id,n)}catch(e){}
 }
