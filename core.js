@@ -23,6 +23,7 @@ const TITLES={
  weekly:['Тижнева статистика','Тижні з понеділка по неділю'],
  daily:['Денна статистика','Історія всіх активних днів'],
  masters:['Майстри','Записи, виручка й зарплата кожного майстра'],
+ cabinet:['Мій кабінет','Ваші записи, заробіток і статистика'],
  settings:['Налаштування','Послуги, працівники, вигляд, дані']
 };
 /* Права працівників: [група, [[ключ, підпис], …]] */
@@ -88,6 +89,7 @@ function canTab(t){
  if(t==='clients')return can('clientsView');
  if(t==='expenses')return can('expView')||can('salaryView');
  if(t==='masters')return can('stats');
+ if(t==='cabinet')return !isOwner()&&!!state.me&&!!state.me.master&&(canView()||can('stats'));
  if(t==='settings')return isOwner();
  return false;
 }
@@ -325,7 +327,7 @@ function applyMode(){
 }
 function updateNav(){
  document.querySelectorAll('#nav button,#gear').forEach(b=>{b.hidden=!canTab(b.dataset.tab)});
- if(!canTab(state.tab)){const f=['overview','records','clients','expenses','masters','settings'].find(canTab);if(f)setTab(f)}
+ if(!canTab(state.tab)){const f=['cabinet','overview','records','clients','expenses','masters','settings'].find(canTab);if(f)setTab(f)}
 }
 function fabInfo(){
  const t=state.tab;
@@ -390,6 +392,6 @@ function renderAll(){
   put('profitTable',profitTable(D.profitMonths));
  }
  put('breakeven',breakevenHtml(D));
- renderRecords();renderClients();renderMoney(D);renderMasters();renderSettings(false);
+ renderRecords();renderClients();renderMoney(D);renderMasters();if(typeof renderCabinet==='function')renderCabinet();renderSettings(false);
  updateFab();
 }

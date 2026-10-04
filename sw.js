@@ -1,7 +1,7 @@
 // Кеш застосунку: після першого відкриття сторінка стартує без інтернету.
 // Оновлення файлів з'являються з наступного відкриття. Щоб примусити, змініть версію нижче.
-const V = 'magnifica-v3f';
-const CORE = ['./', 'index.html', 'style.css', 'core.js', 'records.js', 'clients.js', 'money.js', 'settings.js', 'logs.js', 'extras.js', 'main.js', 'store.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+const V = 'magnifica-v3g';
+const CORE = ['./', 'index.html', 'style.css', 'core.js', 'records.js', 'clients.js', 'money.js', 'settings.js', 'logs.js', 'extras.js', 'cabinet.js', 'main.js', 'store.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(V).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

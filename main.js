@@ -8,7 +8,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeShee
 $('profit').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(b){state.ui.range=b.dataset.range;renderAll()}});
 
 /* логотип → головна */
-const goHome=()=>{const t=['overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
+const goHome=()=>{const t=['cabinet','overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
 $('brandHome').addEventListener('click',goHome);
 $('brandHome').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}});
 
