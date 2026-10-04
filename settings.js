@@ -116,7 +116,10 @@ function openStaff(id){
   <label class="lf"><span>Посада</span><input id="st-role" value="${esc(s.role||'')}" placeholder="майстер манікюру, адміністратор…" maxlength="60" autocomplete="off"></label>
   <label class="chk"><input type="checkbox" id="st-master" ${s.master?'checked':''}> Майстер: приймає клієнтів (з’являється у виборі в записі)</label>
   <div class="lbl2" style="margin-top:12px">Вхід на сайт</div>
-  ${hasLogin?`<div class="note">Логін: <b>${esc(loginOf(ex))}</b>${ex.pw?`<br>Пароль: <b id="st-pwshow">••••••••</b> <button class="btn sm" id="st-pwtoggle" type="button">Показати</button>`:'<br>Пароль не збережено (акаунт створено раніше).'}<div class="btnrow" style="margin-top:8px"><button class="btn sm primary" id="st-copy" type="button">Скопіювати доступ</button>${isRealEmail(ex.email)?'<button class="btn sm" id="st-reset" type="button">Лист для зміни пароля</button>':''}</div></div>
+  ${hasLogin?`<div class="note">Логін: <b>${esc(loginOf(ex))}</b>${ex.pw?`<br>Пароль: <b id="st-pwshow">••••••••</b> <button class="btn sm" id="st-pwtoggle" type="button">Показати</button>`:'<br>Пароль не збережено (акаунт створено раніше).'}<div class="btnrow" style="margin-top:8px"><button class="btn sm primary" id="st-copy" type="button">Скопіювати доступ</button><button class="btn sm" id="st-chpw" type="button">Змінити пароль</button></div>
+   <div id="st-pwbox" hidden style="margin-top:10px">${ex.pw?'':'<label class="lf"><span>Поточний пароль працівника</span><input id="st-oldpw" autocomplete="off" autocapitalize="off" spellcheck="false"></label>'}
+    <label class="lf"><span>Новий пароль (мінімум 6 символів)</span><div class="pwrow"><input id="st-newpw" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn sm" id="st-gen2" type="button">Згенерувати</button></div></label>
+    <button class="btn sm primary" id="st-pwsave" type="button">Застосувати</button> <span class="hint" id="st-pwmsg" style="margin:0"></span></div></div>
    <label class="chk"><input type="checkbox" id="st-active" ${s.active!==false?'checked':''}> Доступ активний</label>`
   :`<label class="chk"><input type="checkbox" id="st-login"> Дати доступ до сайту</label>
    <div id="st-lbox" hidden><label class="lf"><span>Логін (імʼя або пошта)</span><input id="st-email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="наприклад: ira або ira@gmail.com"></label>
@@ -147,9 +150,27 @@ function openStaff(id){
   $('st-copy').addEventListener('click',()=>copyAccess(ex));
   if(ex.pw)$('st-pwtoggle').addEventListener('click',()=>{const sh=$('st-pwshow'),on=sh.dataset.on==='1';sh.dataset.on=on?'':'1';sh.textContent=on?'••••••••':ex.pw;$('st-pwtoggle').textContent=on?'Показати':'Сховати'});
  }
- if(hasLogin&&$('st-reset'))$('st-reset').addEventListener('click',async()=>{
-  try{await Store.resetPassword(ex.email);toast('Лист надіслано на '+ex.email)}catch(e){toast('Не вдалося надіслати лист')}
- });
+
+ if(hasLogin){
+  $('st-chpw').addEventListener('click',()=>{$('st-pwbox').hidden=!$('st-pwbox').hidden});
+  $('st-gen2').addEventListener('click',()=>{$('st-newpw').value=genPass()});
+  $('st-pwsave').addEventListener('click',async()=>{
+   const np=$('st-newpw').value,op=ex.pw||($('st-oldpw')&&$('st-oldpw').value)||'',msg=$('st-pwmsg'),b=$('st-pwsave');
+   if(np.length<6){msg.textContent='Мінімум 6 символів.';return}
+   if(!op){msg.textContent='Вкажіть поточний пароль.';return}
+   b.disabled=true;msg.textContent='Змінюю…';
+   try{
+    await Store.changePassword(ex.email,op,np);
+    const upd={...ex,pw:np};await Store.saveStaff(ex.id,upd);Object.assign(ex,upd);
+    msg.textContent='';closeSheet();
+    copyText(accessText(upd),'Пароль змінено. Новий доступ скопійовано.','Пароль змінено. Відкрийте картку й скопіюйте доступ.');
+   }catch(e){
+    const c=(e&&e.code)||'';
+    msg.textContent=/wrong-password|invalid-credential/.test(c)?'Поточний пароль не збігається — працівник міг змінити його сам.':c==='auth/weak-password'?'Занадто простий пароль.':c==='auth/too-many-requests'?'Забагато спроб, зачекайте кілька хвилин.':'Не вдалося змінити пароль.';
+    b.disabled=false;
+   }
+  });
+ }
  if(ex)arm($('st-del'),'Видалити',async()=>{
   await Store.deleteStaff(ex.id);
   await syncPeople(state.staff.filter(x=>x.id!==ex.id));
