@@ -66,7 +66,7 @@ function renderSettings(force){
   <button class="btn sm" id="addSvc">+ Додати послугу</button></div>
  <div class="card"><h2 class="set-h">Категорії витрат</h2>
   <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати.</p>
-  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><label class="fx" title="Постійна витрата (для точки беззбитковості)"><input type="checkbox" data-fixed="${esc(c.id)}" ${isFixedCat(c.id)?'checked':''}> пост.</label><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button></div>`).join('')}
+  ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><label class="fx" title="Постійна витрата (для точки беззбитковості)"><input type="checkbox" data-fixed="${esc(c.id)}" ${isFixedCat(c.id)?'checked':''}> пост.</label><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button>${isFixedCat(c.id)?`<label class="catamt"><span>Щомісячна сума, ₴ <small>(для беззбитковості)</small></span><input class="pr" data-famt="${esc(c.id)}" inputmode="numeric" placeholder="0" value="${c.amt>0?esc(c.amt):''}"></label>`:''}</div>`).join('')}
   <button class="btn sm" id="addCat">+ Додати категорію</button></div>
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Працівники</h2>
   <p class="set-p">Тут ви створюєте майстрів і працівників, даєте їм вхід на сайт та визначаєте, які розділи вони бачать і що можуть робити. Майстри з’являються у виборі в записі.</p>
@@ -329,7 +329,7 @@ async function importFile(f){
 function initSettings(){
  const sett=$('settings');
  sett.addEventListener('change',e=>{
-  const row=e.target.closest('.setrow');if(!row||e.target.matches('[data-fixed]'))return;
+  const row=e.target.closest('.setrow');if(!row||e.target.matches('[data-fixed],[data-famt]'))return;
   const c=cfgDoc();
   if(row.dataset.sid){
    const s=c.services.find(x=>x.id===row.dataset.sid);if(!s)return;

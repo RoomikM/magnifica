@@ -152,7 +152,11 @@ const isFixedCat=id=>{const c=cfgCats().find(x=>x.id===id);return c?(c.fixed!=nu
 function breakevenHtml(D){
  if(!hasFin())return'';
  const mk=todayKey().slice(0,7),pk=addMonths(todayKey(),-1).slice(0,7);
- const fixed=m=>state.exps.filter(x=>String(x.d).startsWith(m)&&isFixedCat(x.cat)).reduce((t,x)=>t+(+x.amount||0),0);
+ /* постійна категорія: якщо задано щомісячну суму, беремо її (або фактичні витрати, коли вони більші) */
+ const fixed=m=>cfgCats().filter(c=>isFixedCat(c.id)).reduce((t,c)=>{
+  const rec=state.exps.filter(x=>String(x.d).startsWith(m)&&x.cat===c.id).reduce((a,x)=>a+(+x.amount||0),0);
+  return t+(+c.amt>0?Math.max(+c.amt,rec):rec);
+ },0);
  const sal=m=>state.sals.filter(x=>String(x.d).startsWith(m)).reduce((t,x)=>t+(+x.amount||0),0);
  const f=Math.max(fixed(mk),fixed(pk)),s=Math.max(sal(mk),sal(pk)),target=f+s;
  const TT='Постійні витрати (категорії з позначкою «пост.») та зарплати; береться більше з цього й минулого місяця';
@@ -179,7 +183,8 @@ function initExtras(){
   const t=e.target;
   if(t.matches('[data-tpl]')){const c=cfgDoc();c.tpl=c.tpl||{};const v=t.value.trim();if(v&&v!==TPL_DEF[t.dataset.tpl])c.tpl[t.dataset.tpl]=v;else delete c.tpl[t.dataset.tpl];saveCfg().then(()=>toast('Збережено'))}
   else if(t.matches('[data-cfgn]')){const c=cfgDoc(),k=t.dataset.cfgn;let n=numOf(t.value);if(k==='bdDisc')n=Math.min(100,n);if(k==='lapseWeeks')n=Math.max(1,n);c[k]=n;t.value=n;saveCfg().then(()=>{toast('Збережено');renderAll()})}
-  else if(t.matches('[data-fixed]')){const k=cfgDoc().expCats.find(x=>x.id===t.dataset.fixed);if(k){k.fixed=t.checked;saveCfg().then(()=>{toast('Збережено');renderAll()})}}
+  else if(t.matches('[data-fixed]')){const k=cfgDoc().expCats.find(x=>x.id===t.dataset.fixed);if(k){k.fixed=t.checked;saveCfg().then(()=>{toast('Збережено');renderAll();renderSettings(true)})}}
+  else if(t.matches('[data-famt]')){const k=cfgDoc().expCats.find(x=>x.id===t.dataset.famt);if(k){const n=numOf(t.value);k.amt=n;t.value=n?String(n):'';saveCfg().then(()=>{toast('Збережено');renderAll()})}}
  });
  s.addEventListener('click',e=>{
   if(e.target.closest('#tplReset')){const c=cfgDoc();delete c.tpl;saveCfg().then(()=>{toast('Тексти скинуто');renderSettings(true)})}
