@@ -466,6 +466,7 @@ function renderAll(){
    kpi('Середня сума / день',money(OS.avg),'середнє по активних днях')+
    kpi('Найкращий день',OS.best?money(OS.best.total):'—',OS.best?OS.best.label:''));
   put('services',serviceCards(OS));
+  put('kickBox',isOwner()?'<div class="kick-row"><button class="btn sm" type="button" id="kickAll2">Вийти із всіх ПК</button></div>':'');
   put('mastersBox',mastersCard({masterRev:O.masters}));
   put('dailyChart',lineChart(D.days));
   put('serviceDonut',donut(S.services,S.total));

@@ -1,7 +1,14 @@
 'use strict';
 /* Події, вхід, запуск. */
 
-document.addEventListener('click',e=>{if(e.target.closest('#goGrp'))setTab('settings',true)});
+document.addEventListener('click',e=>{
+  if(e.target.closest('#goGrp'))setTab('settings',true);
+  const k=e.target.closest('#kickAll2');
+  if(k){
+   if(k.dataset.armed!=='1'){k.dataset.armed='1';k.textContent='Натисніть ще раз для виходу';setTimeout(()=>{if(k.isConnected){k.dataset.armed='';k.textContent='Вийти із всіх ПК'}},3500);return}
+   const c=cfgDoc();c.kick=Date.now();lsSet('magnifica-login-at',String(c.kick+1));saveCfg().then(()=>toast('Команда виходу надіслана'));k.dataset.armed='';k.textContent='Вийти із всіх ПК';
+  }
+ });
 document.querySelectorAll('#nav button,#gear').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab,true)));
 $('fab').addEventListener('click',()=>{const f=fabInfo();if(f)f[1]()});
 /* вікно закривається лише хрестиком або після «Зберегти»: випадковий тап повз картку чи Esc не губить введені дані */

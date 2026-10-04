@@ -485,6 +485,7 @@ function initSettings(){
   if(t.closest('#exCsv')){exportCsv();return}
   if(t.closest('#imBtn')){$('impFile').click();return}
   if(t.closest('#manDay')){openDay();return}
+  if(t.closest('#kickAll2'))return;
   if(t.closest('#kickAll')){const c=cfgDoc();c.kick=Date.now();lsSet('magnifica-login-at',String(c.kick+1));saveCfg().then(()=>toast('Команда виходу надіслана'));return}
   if(t.closest('#logout')){Store.signOut();return}
  });
