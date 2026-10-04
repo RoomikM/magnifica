@@ -70,7 +70,7 @@ $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.va
 /* ---------- вхід ---------- */
 function authErr(e){
  const c=(e&&e.code)||'';
- if(/invalid-credential|wrong-password|user-not-found|invalid-email|missing-password/.test(c))return'Невірна пошта або пароль.';
+ if(/invalid-credential|wrong-password|user-not-found|invalid-email|missing-password/.test(c))return'Невірний логін або пароль.';
  if(c==='auth/too-many-requests')return'Забагато спроб. Зачекайте кілька хвилин.';
  if(c==='auth/network-request-failed')return'Немає зв’язку з інтернетом.';
  if(c==='auth/operation-not-allowed')return'Вхід за паролем вимкнено у Firebase.';
@@ -80,7 +80,7 @@ $('loginForm').addEventListener('submit',async e=>{
  e.preventDefault();
  const b=$('l-btn'),er=$('l-err');
  er.hidden=true;b.disabled=true;b.textContent='Входжу…';
- try{await Store.signIn($('l-email').value.trim(),$('l-pass').value)}
+ try{await Store.signIn(loginToEmail($('l-email').value),$('l-pass').value)}
  catch(err){er.textContent=authErr(err);er.hidden=false}
  b.disabled=false;b.textContent='Увійти';
 });

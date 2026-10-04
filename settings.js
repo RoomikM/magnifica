@@ -85,6 +85,24 @@ function renderSettings(force){
  </div>`;
 }
 
+/* ---------- доступ працівника: логін, пароль, копіювання ---------- */
+const FAKE_DOMAIN='@magnifica.app';
+const loginToEmail=l=>{l=String(l).trim();return l.includes('@')?l:l.toLowerCase()+FAKE_DOMAIN};
+const isRealEmail=e=>!!e&&!String(e).endsWith(FAKE_DOMAIN);
+const loginOf=s=>isRealEmail(s.email)?s.email:String(s.email||'').replace(FAKE_DOMAIN,'');
+function genPass(){
+ const ch='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',a=new Uint32Array(10);
+ crypto.getRandomValues(a);return Array.from(a,x=>ch[x%ch.length]).join('');
+}
+const siteUrl=()=>location.href.split('#')[0].split('?')[0].replace(/[^/]*$/,'');
+const accessText=s=>siteUrl()+'\nLogin: '+loginOf(s)+(s.pw?'\nPassw: '+s.pw:'');
+function copyText(t,ok,fail){
+ const done=()=>toast(ok);
+ const old=()=>{try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const r=document.execCommand('copy');ta.remove();r?done():toast(fail||'Не вдалося скопіювати')}catch(e){toast(fail||'Не вдалося скопіювати')}};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,old);else old();
+}
+const copyAccess=s=>copyText(accessText(s),s.pw?'Доступ скопійовано':'Скопійовано без пароля (його не збережено)');
+
 /* ---------- працівник ---------- */
 function openStaff(id){
  if(!isOwner())return;
@@ -98,12 +116,12 @@ function openStaff(id){
   <label class="lf"><span>Посада</span><input id="st-role" value="${esc(s.role||'')}" placeholder="майстер манікюру, адміністратор…" maxlength="60" autocomplete="off"></label>
   <label class="chk"><input type="checkbox" id="st-master" ${s.master?'checked':''}> Майстер: приймає клієнтів (з’являється у виборі в записі)</label>
   <div class="lbl2" style="margin-top:12px">Вхід на сайт</div>
-  ${hasLogin?`<div class="note">Пошта для входу: <b>${esc(ex.email)}</b>.<br><button class="btn sm" id="st-reset" type="button" style="margin-top:8px">Надіслати лист для зміни пароля</button></div>
+  ${hasLogin?`<div class="note">Логін: <b>${esc(loginOf(ex))}</b>${ex.pw?`<br>Пароль: <b id="st-pwshow">••••••••</b> <button class="btn sm" id="st-pwtoggle" type="button">Показати</button>`:'<br>Пароль не збережено (акаунт створено раніше).'}<div class="btnrow" style="margin-top:8px"><button class="btn sm primary" id="st-copy" type="button">Скопіювати доступ</button>${isRealEmail(ex.email)?'<button class="btn sm" id="st-reset" type="button">Лист для зміни пароля</button>':''}</div></div>
    <label class="chk"><input type="checkbox" id="st-active" ${s.active!==false?'checked':''}> Доступ активний</label>`
   :`<label class="chk"><input type="checkbox" id="st-login"> Дати доступ до сайту</label>
-   <div id="st-lbox" hidden><label class="lf"><span>Пошта</span><input id="st-email" type="email" inputmode="email" autocapitalize="off" autocomplete="off"></label>
-   <label class="lf"><span>Пароль (мінімум 6 символів)</span><input id="st-pass" type="text" autocomplete="off" autocapitalize="off"></label>
-   <div class="hint" style="margin:-4px 0 8px">Передайте працівнику пошту й пароль.</div></div>`}
+   <div id="st-lbox" hidden><label class="lf"><span>Логін (імʼя або пошта)</span><input id="st-email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="наприклад: ira або ira@gmail.com"></label>
+   <label class="lf"><span>Пароль (мінімум 6 символів)</span><div class="pwrow"><input id="st-pass" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn sm" id="st-gen" type="button">Згенерувати</button></div></label>
+   <div class="hint" style="margin:-4px 0 8px">Після збереження в картці працівника зʼявиться кнопка «Скопіювати доступ».</div></div>`}
   <div id="st-pbox" ${hasLogin||false?'':'hidden'}>
    <div class="lbl2" style="margin-top:12px">Права доступу</div>
    <div class="btnrow" style="margin-bottom:8px">${Object.entries(PERM_PRESETS).map(([k,v])=>`<button class="btn sm" type="button" data-preset="${k}">${v.label}</button>`).join('')}</div>
@@ -124,7 +142,12 @@ function openStaff(id){
   const set=new Set(PERM_PRESETS[b.dataset.preset].perms);
   document.querySelectorAll('[data-p]').forEach(i=>{i.checked=set.has(i.dataset.p)});
  }));
- if(hasLogin)$('st-reset').addEventListener('click',async()=>{
+ if(!hasLogin)$('st-gen').addEventListener('click',()=>{$('st-pass').value=genPass()});
+ if(hasLogin){
+  $('st-copy').addEventListener('click',()=>copyAccess(ex));
+  if(ex.pw)$('st-pwtoggle').addEventListener('click',()=>{const sh=$('st-pwshow'),on=sh.dataset.on==='1';sh.dataset.on=on?'':'1';sh.textContent=on?'••••••••':ex.pw;$('st-pwtoggle').textContent=on?'Показати':'Сховати'});
+ }
+ if(hasLogin&&$('st-reset'))$('st-reset').addEventListener('click',async()=>{
   try{await Store.resetPassword(ex.email);toast('Лист надіслано на '+ex.email)}catch(e){toast('Не вдалося надіслати лист')}
  });
  if(ex)arm($('st-del'),'Видалити',async()=>{
@@ -136,10 +159,11 @@ function openStaff(id){
   const name=$('st-name').value.trim();
   if(!name){err('Вкажіть ім’я.');return}
   const wantLogin=!hasLogin&&$('st-login')&&$('st-login').checked;
-  let email='',pass='';
+  let email='',pass='',login='';
   if(wantLogin){
-   email=$('st-email').value.trim();pass=$('st-pass').value;
-   if(!/^\S+@\S+\.\S+$/.test(email)){err('Вкажіть правильну пошту.');return}
+   login=$('st-email').value.trim();pass=$('st-pass').value;
+   if(!/^[A-Za-z0-9._+@-]{3,60}$/.test(login)||(login.includes('@')&&!/^\S+@\S+\.\S+$/.test(login))){err('Логін: від 3 символів, латиницею, цифрами або . _ - (або повна пошта).');return}
+   email=loginToEmail(login);
    if(pass.length<6){err('Пароль має бути не менше 6 символів.');return}
   }
   err('');
@@ -153,15 +177,17 @@ function openStaff(id){
    if(uid||hasLogin)document.querySelectorAll('[data-p]').forEach(i=>{if(i.checked)perms[i.dataset.p]=true});
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
-    active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,perms,
+    active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
     pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
-   closeSheet();toast(wantLogin?'Працівника створено. Передайте пошту й пароль.':'Збережено');
+   closeSheet();
+   if(wantLogin){copyText(accessText(obj),'Працівника створено. Доступ скопійовано в буфер.','Працівника створено. Відкрийте картку й натисніть «Скопіювати доступ».')}
+   else toast('Збережено');
   }catch(e){
    const c=e&&e.code||'';
-   err(c==='auth/email-already-in-use'?'Ця пошта вже зареєстрована.':c==='auth/weak-password'?'Занадто простий пароль.':c==='auth/invalid-email'?'Некоректна пошта.':c==='auth/operation-not-allowed'?'Вхід за поштою вимкнено у Firebase.':errText(e));
+   err(c==='auth/email-already-in-use'?'Цей логін уже зайнятий.':c==='auth/weak-password'?'Занадто простий пароль.':c==='auth/invalid-email'?'Некоректна пошта.':c==='auth/operation-not-allowed'?'Вхід за поштою вимкнено у Firebase.':errText(e));
    b.disabled=false;b.textContent='Зберегти';
   }
  });
