@@ -96,8 +96,20 @@ function resetData(){
 setSkin(document.documentElement.getAttribute('data-skin')||'night');
 setNavH();addEventListener('resize',()=>{applyMode();setNavH()});
 setTab('overview');
+addEventListener('error',e=>{
+ if(state.status==='loading'){state.status='error';state.errMsg=String(e.message||e);renderAll()}
+});
 (function(){
  if(!(window.Store&&Store.configured)){setView('config');return}
+ if(!Store.subscribeMe){
+  // у кеші лишився старий store.js: скидаємо кеш і перезавантажуємо один раз
+  if(!sessionStorage.getItem('mg-fix')){
+   sessionStorage.setItem('mg-fix','1');
+   Promise.all([navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(r=>Promise.all(r.map(x=>x.unregister()))):0,window.caches?caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x)))):0]).then(()=>location.reload());
+   return;
+  }
+ }
+ setTimeout(()=>{if(state.status==='loading'){state.status='error';state.errMsg='час очікування вичерпано';renderAll()}},20000);
  let unsubData=null,unsubMe=null,sig='';
  const stopData=()=>{if(unsubData){unsubData();unsubData=null}};
  const ready=()=>{if(state.status!=='ready'){state.status='ready'}renderAll()};
@@ -129,7 +141,11 @@ setTab('overview');
    if(s===sig)return;sig=s;
    if(me){const staff0=state.staff;resetData();state.staff=staff0}
    startData(me,user.uid);
-  },code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()});
+  },code=>{
+   // немає прав читати власний профіль працівника → це власник зі старими правилами; справжню відмову покаже перевірка днів
+   if(code==='permission-denied'){if(sig!=='null'){sig='null';startData(null,user.uid)}}
+   else{state.status='error';renderAll()}
+  });
  });
  // записи, що «відбулися» з часом, мають потрапляти в статистику без перезавантаження
  setInterval(()=>{if(state.status==='ready'&&$('sheet').hidden&&document.activeElement.tagName!=='INPUT')renderAll()},60000);

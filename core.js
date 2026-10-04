@@ -351,7 +351,7 @@ function statusCard(){
  const s=state.status;
  if(s==='loading')return'<div class="pulse"></div><h2>Завантажую дані…</h2><p>Це займе кілька секунд.</p>';
  if(s==='denied')return'<h2>Немає доступу до даних</h2><p>Цей акаунт не додано до правил бази Firestore або доступ вимкнено. Зверніться до адміністратора.</p>';
- if(s==='error')return'<h2>Не вдалося прочитати дані</h2><p>Перевірте зв’язок і оновіть сторінку.</p>';
+ if(s==='error')return'<h2>Не вдалося прочитати дані</h2><p>Перевірте зв’язок і оновіть сторінку.'+(state.errMsg?' <small>('+esc(state.errMsg)+')</small>':'')+'</p>';
  return'';
 }
 function renderAll(){
