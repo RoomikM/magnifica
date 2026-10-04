@@ -143,8 +143,10 @@ function openAppt(init){
  const freq=freqServices(svs);
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?(ro?'Запис (перегляд)':'Запис клієнта'):'Новий запис'}</h2>${closeBtn}</div>
   <div class="fgrid"><label class="lf"><span>Дата</span><input type="date" id="p-d" value="${esc(a.d)}"></label>
-   <label class="lf"><span>Час</span><input type="time" id="p-t" step="300" value="${esc(a.t)}"></label>
+   <label class="lf"><span>Час</span><input type="text" id="p-t" inputmode="numeric" autocomplete="off" placeholder="14:30" maxlength="5" value="${esc(a.t)}" aria-describedby="p-tc"></label>
    <label class="lf"><span>Тривалість</span><select id="p-dur">${durs.map(m=>`<option value="${m}" ${m===+a.dur?'selected':''}>${durText(m)}</option>`).join('')}</select></label></div>
+  <div class="slots" id="p-slots" role="group" aria-label="Вільні години"></div>
+  <div class="hint" id="p-tc" style="margin:4px 0 0"></div>
   <div class="lf acw"><span>Клієнт (ПІБ)</span><input id="p-name" autocomplete="off" placeholder="почніть вводити ім’я або телефон" value="${esc(a.name)}" maxlength="80"><div class="ac" id="p-ac" hidden></div><div class="cinfo" id="p-ci" hidden></div></div>
   <label class="lf"><span>Телефон</span><input id="p-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="необов’язково" value="${esc(a.phone)}" maxlength="24"></label>
   ${ms.length||lockM?`<label class="lf"><span>Майстер</span><select id="p-m" ${lockM?'disabled':''}><option value="">— не вказано —</option>${ms.map(m=>`<option value="${esc(m.id)}" ${m.id===a.m?'selected':''}>${esc(m.name)}</option>`).join('')}${a.m&&!ms.some(m=>m.id===a.m)?`<option value="${esc(a.m)}" selected>${esc(a.mn||personName(a.m)||'Майстер')}</option>`:''}</select></label>`:''}
@@ -246,14 +248,63 @@ function openAppt(init){
  $('p-ci').addEventListener('click',e=>{if(e.target.closest('[data-unlink]')){a.cid='';showInfo();drawSub();upTotal();$('p-name').focus()}});
  showInfo();
 
+ /* вибір часу: поле + сітка слотів + стрілки */
+ const normT=v=>{
+  v=String(v||'').trim();let h,mi;
+  const m=v.match(/^(\d{1,2})\s*[:.,;\s-]\s*(\d{1,2})$/);
+  if(m){h=+m[1];mi=+m[2]}
+  else{const dg=v.replace(/\D/g,'');
+   if(dg.length===1||dg.length===2){h=+dg;mi=0}
+   else if(dg.length===3){h=+dg[0];mi=+dg.slice(1)}
+   else if(dg.length===4){h=+dg.slice(0,2);mi=+dg.slice(2)}
+   else return ''}
+  if(h>23||mi>59)return '';
+  return pad(h)+':'+pad(mi);
+ };
+ const drawSlots=()=>{
+  const box=$('p-slots');if(!box)return;
+  const d=$('p-d').value,dur=+$('p-dur').value||60,mSel=$('p-m'),m=mSel?mSel.value:(a.m||'');
+  const cur=normT($('p-t').value);
+  const busy=isDate(d)?state.appts.filter(x=>x.id!==a.id&&x.d===d&&isOk(x)&&(x.m||'')===m):[];
+  const hitAt=s=>busy.find(x=>toMin(x.t)<s+dur&&toMin(x.t)+(+x.dur||60)>s);
+  const now=nowKey();
+  let h='';
+  for(let s=480;s<=1290;s+=30){
+   const t=pad(Math.floor(s/60))+':'+pad(s%60),hit=hitAt(s);
+   h+=`<button type="button" class="slot${hit?' busy':''}${isDate(d)&&(d+' '+t)<now?' past':''}${cur===t?' on':''}" data-t="${t}" aria-pressed="${cur===t}"${hit?` title="Зайнято: ${esc(hit.t)} ${esc(hit.name||'')}"`:''}>${t}</button>`;
+  }
+  box.innerHTML=h;
+  const c=$('p-tc'),ch=cur?hitAt(toMin(cur)):null;
+  c.textContent=!cur?'Вкажіть час, напр. 1430 або 14:30':ch?'Зайнято: '+ch.t+'–'+pad(Math.floor((toMin(ch.t)+(+ch.dur||60))/60)%24)+':'+pad((toMin(ch.t)+(+ch.dur||60))%60)+' '+(ch.name||'без імені'):'';
+  c.classList.toggle('warn',!!ch);
+ };
+ const setT=v=>{$('p-t').value=v;drawSlots()};
+ $('p-slots').addEventListener('mousedown',e=>e.preventDefault());
+ $('p-slots').addEventListener('click',e=>{const b=e.target.closest('.slot');if(b)setT(b.dataset.t)});
+ $('p-t').addEventListener('input',drawSlots);
+ $('p-t').addEventListener('blur',e=>{const n=normT(e.target.value);if(n&&n!==e.target.value){e.target.value=n;drawSlots()}});
+ $('p-t').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const n=normT(e.target.value);if(n){e.target.value=n;drawSlots()}e.preventDefault();return}
+  if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+  e.preventDefault();
+  const base=normT(e.target.value)||defTime($('p-d').value||todayKey());
+  const st=e.shiftKey?60:15,v=Math.min(1439,Math.max(0,toMin(base)+(e.key==='ArrowUp'?st:-st)));
+  setT(pad(Math.floor(v/60))+':'+pad(v%60));
+ });
+ $('p-d').addEventListener('change',drawSlots);
+ $('p-dur').addEventListener('change',drawSlots);
+ if($('p-m'))$('p-m').addEventListener('change',drawSlots);
+ drawSlots();
+
  if(ro){
-  document.querySelectorAll('#sheetPanel input,#sheetPanel select,#sheetPanel .chip,#sheetPanel #p-st button,#sheetPanel .rm').forEach(el=>{el.disabled=true});
+  document.querySelectorAll('#sheetPanel input,#sheetPanel select,#sheetPanel .chip,#sheetPanel .slot,#sheetPanel #p-st button,#sheetPanel .rm').forEach(el=>{el.disabled=true});
  }
  if(ex&&can('apptDel'))arm($('p-del'),'Видалити',async()=>{if(ex.subUsed)await subAdjust(ex.cid,1);await Store.deleteAppt(a.id);closeSheet();toast('Запис видалено');offerSlot(ex)});
  if(!ro)$('p-save').addEventListener('click',async()=>{
-  const d=$('p-d').value,t=$('p-t').value;
+  const d=$('p-d').value,t=normT($('p-t').value);
   if(!isDate(d)){err('Оберіть дату.');return}
-  if(!/^\d{2}:\d{2}$/.test(t)){err('Вкажіть час.');return}
+  if(!t){err('Вкажіть час, напр. 14:30.');return}
+  $('p-t').value=t;
   if(!a.items.length){err('Оберіть хоча б одну роботу.');return}
   const dur=+$('p-dur').value||60;
   const mSel=$('p-m');const m=mSel?mSel.value:(a.m||'');
