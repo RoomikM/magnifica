@@ -554,4 +554,7 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 .pctrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
 .pctrow span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pctrow input{width:110px;flex:none;font:inherit;font-size:16px;text-align:right;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
-.setrow input.grp{grid-column:1/-1;font-size:13px;padding:6px 10px;color:var(--muted)}
+.setrow .grp{grid-column:1;min-width:0}
+.setrow input.du{grid-column:2;text-align:right;font-size:13px;padding:6px 10px}
+.grp-hint{grid-column:1/-1;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px;border:1px dashed var(--line);border-radius:14px;font-size:13px;color:var(--muted)}
+.setrow input.grpx{grid-column:1/-1;font-size:13px;padding:6px 10px;color:var(--muted)}

@@ -61,9 +61,9 @@ function renderSettings(force){
   <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button>`).join('');
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
-  <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
-  <div class="setrow hd"><span>Назва</span><span>Ціна, ₴</span><span></span></div>
-  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><select class="grp" aria-label="Група: ${esc(s.name)}"><option value="">— без групи —</option>${grpOpts(s)}</select></div>`).join('')}
+  <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Час (хв) підставляється в запис і його можна змінити. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
+  <div class="setrow hd"><span>Назва / група</span><span>Ціна, ₴</span><span></span></div>
+  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><select class="grp" aria-label="Група: ${esc(s.name)}"><option value="">— без групи —</option>${grpOpts(s)}</select><input class="du" value="${s.dur?s.dur:''}" placeholder="хв" inputmode="numeric" aria-label="Тривалість, хв: ${esc(s.name)}"></div>`).join('')}
   <button class="btn sm" id="addSvc">+ Додати послугу</button>
   <div class="lbl2" style="margin-top:14px">Групи послуг</div>
   <p class="set-p" style="margin-top:0">Група об’єднує кілька послуг в один банер на Огляді. Створіть групу тут або під час додавання послуги.</p>
@@ -145,11 +145,12 @@ function openNewService(){
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Нова послуга</h2>${closeBtn}</div>
   <label class="lf"><span>Назва</span><input id="ns-name" maxlength="40" autocomplete="off" placeholder="напр. Комплекс"></label>
   <label class="lf"><span>Ціна, ₴</span><input id="ns-price" inputmode="numeric" placeholder="0"></label>
+  <label class="lf"><span>Час на послугу, хв <small>(підставляється в запис)</small></span><input id="ns-dur" inputmode="numeric" maxlength="3" placeholder="напр. 90"></label>
   <label class="lf"><span>Група на Огляді</span><select id="ns-grp"><option value="">— без групи —</option>${cfgGroups().map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('')}<option value="__new">＋ Нова група…</option></select></label>
   <label class="lf" id="ns-newbox" hidden><span>Назва нової групи</span><input id="ns-newgrp" maxlength="40" autocomplete="off" placeholder="напр. Манікюр"></label>
   <div class="err" id="ns-err" role="alert" hidden></div>
   <div class="actions"><button class="btn primary" id="ns-save">Додати</button></div>`);
- digitsOnly($('ns-price'));
+ digitsOnly($('ns-price'));digitsOnly($('ns-dur'));
  $('ns-grp').addEventListener('change',()=>{const n=$('ns-grp').value==='__new';$('ns-newbox').hidden=!n;if(n)$('ns-newgrp').focus()});
  $('ns-save').addEventListener('click',async()=>{
   const name=$('ns-name').value.trim(),err=m=>{const e=$('ns-err');e.textContent=m;e.hidden=!m};
@@ -162,7 +163,7 @@ function openNewService(){
    if(!g){g={id:'g'+newId().slice(0,8),name:gn};c.groups.push(g)}
    gid=g.id;
   }
-  c.services.push({id:'s'+newId().slice(0,8),name,price:numOf($('ns-price').value),gid:gid||''});
+  c.services.push({id:'s'+newId().slice(0,8),name,price:numOf($('ns-price').value),dur:Math.min(600,numOf($('ns-dur').value))||0,gid:gid||''});
   await saveCfg();closeSheet();renderAll();renderSettings(true);toast('Послугу додано');
  });
  setTimeout(()=>$('ns-name').focus(),50);
@@ -428,6 +429,7 @@ function initSettings(){
    const s=c.services.find(x=>x.id===row.dataset.sid);if(!s)return;
    if(e.target.classList.contains('nm')){const v=e.target.value.trim();if(!v){e.target.value=s.name;return}s.name=v}
    else if(e.target.classList.contains('grp')){s.gid=e.target.value;delete s.group}
+   else if(e.target.classList.contains('du')){s.dur=Math.min(600,numOf(e.target.value))||0;e.target.value=s.dur?String(s.dur):''}
    else{s.price=numOf(e.target.value);e.target.value=s.price?String(s.price):''}
    saveCfg().then(()=>toast('Збережено'));
   }else if(row.dataset.gid){
@@ -440,7 +442,7 @@ function initSettings(){
    k.name=v;saveCfg().then(()=>toast('Збережено'));
   }
  });
- sett.addEventListener('input',e=>{if(e.target.classList.contains('pr'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,7)});
+ sett.addEventListener('input',e=>{if(e.target.classList.contains('pr'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,7);if(e.target.classList.contains('du'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,3)});
  sett.addEventListener('click',e=>{
   const t=e.target;let b;
   if((b=t.closest('.rm'))){

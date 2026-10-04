@@ -115,7 +115,7 @@ function saveCfg(){
   .catch(e=>toast(errText(e)));
 }
 function svList(){
- const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,gid:s.gid||'',group:(grpOf(s)||{}).name||''}));
+ const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,dur:+s.dur||0,gid:s.gid||'',group:(grpOf(s)||{}).name||''}));
  const seen=new Set(list.map(s=>s.id));
  const add=(id,name)=>{if(!seen.has(id)){seen.add(id);list.push({id,name:name||LEGACY_NAMES[id]||id,price:0,archived:true})}};
  state.days.forEach(v=>Object.keys((v&&v.a)||{}).forEach(id=>add(id)));
@@ -294,7 +294,8 @@ function workedHtml(D){
 }
 function serviceCards(S){
  const gl=svGroups(S.services,S.total),max=Math.max(1,...gl.map(g=>g.amount));
- return gl.map(g=>{
+ const hint=isOwner()&&!cfgGroups().length?`<div class="grp-hint"><span>Щоб об’єднати послуги в один банер (напр. «Манікюр»), створіть групи.</span><button class="btn sm" type="button" data-tab="settings" id="goGrp">Створити групи</button></div>`:'';
+ return hint+gl.map(g=>{
   const c=colorOf(svIndex(g.first));
   return `<div class="service">
   <div class="service-top"><span class="service-name">${esc(g.name)}</span><span class="dot" style="background:${c}"></span></div>

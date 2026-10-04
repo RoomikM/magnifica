@@ -1,6 +1,7 @@
 'use strict';
 /* Події, вхід, запуск. */
 
+document.addEventListener('click',e=>{if(e.target.closest('#goGrp'))setTab('settings',true)});
 document.querySelectorAll('#nav button,#gear').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab,true)));
 $('fab').addEventListener('click',()=>{const f=fabInfo();if(f)f[1]()});
 /* вікно закривається лише хрестиком або після «Зберегти»: випадковий тап повз картку чи Esc не губить введені дані */

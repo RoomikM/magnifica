@@ -133,6 +133,7 @@ function openAppt(init){
  const ro=!!ex&&!can('apptEdit');
  const d0=(init&&init.d)||todayKey();
  const a=ex?JSON.parse(JSON.stringify(ex)):{d:d0,t:(init&&init.t)||defTime(d0),dur:(init&&init.dur)||60,cid:(init&&init.cid)||'',name:(init&&init.name)||'',phone:(init&&init.phone)||'',note:'',items:init&&init.items?JSON.parse(JSON.stringify(init.items)):[],st:'ok',m:init&&init.m!=null?init.m:defaultMaster()};
+ if(ex)a.durManual=true;
  if(!a.st)a.st='ok';
  a.subOn=!!a.subUsed;
  const remHtml=ex&&ex.phone&&isOk(ex)&&(ex.d+' '+ex.t)>=nowKey()?`<details class="remd"><summary>Нагадати клієнту</summary>${msgPanel(ex.phone,fillTpl('rem',apptVars(ex)))}</details>`:'';
@@ -184,6 +185,13 @@ function openAppt(init){
   $('p-sel').innerHTML=a.items.map((it,i)=>`<div class="selrow"><span class="sname"><i class="dot" style="background:${colorOf(svIndex(it.sid))}"></i>${esc(it.name)}</span><input data-i="${i}" inputmode="numeric" value="${it.price||''}" placeholder="0" aria-label="Ціна: ${esc(it.name)}"><button class="rm" type="button" data-rm="${i}" aria-label="Прибрати">✕</button></div>`).join('');
   upTotal();
  };
+ const syncDur=()=>{
+  if(a.durManual)return;
+  const sum=a.items.reduce((s,i)=>{const v=svs.find(x=>x.id===i.sid);return s+((v&&v.dur)||0)},0);
+  if(!sum)return;
+  const sel=$('p-dur');if(![...sel.options].some(o=>+o.value===sum)){const o=document.createElement('option');o.value=sum;o.textContent=durText(sum);const after=[...sel.options].find(x=>+x.value>sum);sel.insertBefore(o,after||null)}
+  sel.value=String(sum);a.dur=sum;drawSlots();
+ };
  const addItem=sid=>{const s=svs.find(x=>x.id===sid);if(s&&!a.items.some(i=>i.sid===sid))a.items.push({sid,name:s.name,price:s.price})};
  const showSt=()=>{
   document.querySelectorAll('#p-st button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===a.st)));
@@ -198,14 +206,14 @@ function openAppt(init){
   const b=e.target.closest('.chip');if(!b)return;
   const sid=b.dataset.sid,i=a.items.findIndex(x=>x.sid===sid);
   if(i>=0)a.items.splice(i,1);else addItem(sid);
-  drawChips();drawSel();
+  drawChips();drawSel();syncDur();
  });
- $('p-more').addEventListener('change',e=>{if(e.target.value){addItem(e.target.value);drawChips();drawSel()}});
+ $('p-more').addEventListener('change',e=>{if(e.target.value){addItem(e.target.value);drawChips();drawSel();syncDur()}});
  $('p-sel').addEventListener('input',e=>{
   const el=e.target.closest('input');if(!el)return;
   el.value=el.value.replace(/\D/g,'').slice(0,7);a.items[+el.dataset.i].price=numOf(el.value);upTotal();
  });
- $('p-sel').addEventListener('click',e=>{const b=e.target.closest('.rm');if(!b)return;a.items.splice(+b.dataset.rm,1);drawChips();drawSel()});
+ $('p-sel').addEventListener('click',e=>{const b=e.target.closest('.rm');if(!b)return;a.items.splice(+b.dataset.rm,1);drawChips();drawSel();syncDur()});
  $('p-st').addEventListener('click',e=>{const b=e.target.closest('button');if(b){a.st=b.dataset.s;showSt()}});
 
  /* автопідказка клієнтів */
@@ -292,7 +300,7 @@ function openAppt(init){
   setT(pad(Math.floor(v/60))+':'+pad(v%60));
  });
  $('p-d').addEventListener('change',drawSlots);
- $('p-dur').addEventListener('change',drawSlots);
+ $('p-dur').addEventListener('change',()=>{a.durManual=true;drawSlots()});
  if($('p-m'))$('p-m').addEventListener('change',drawSlots);
  drawSlots();
 
