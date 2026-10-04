@@ -92,6 +92,7 @@ function renderSettings(force){
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
   <button class="btn sm" id="logout">Вийти</button><div class="ver">MAGNiFICA · v3</div></div>
  </div>`;
+ applySetTab(el);
  renderLogs();
 }
 
@@ -120,6 +121,17 @@ const grpOpts=sv=>{
  if(cur&&!gs.some(g=>sv.gid===g.id))h+=`<option value="" selected>${esc(cur.name)}</option>`;
  return h;
 };
+/* вкладки налаштувань: картки групуються за заголовком */
+const SET_TABS=[['svc','Послуги',['Послуги та ціни','Категорії витрат']],['staff','Працівники',['Працівники']],['msg','Повідомлення',['Повідомлення клієнтам']],['look','Вигляд',['Вигляд','Акаунт']],['data','Дані',['Дані','Логи']]];
+function applySetTab(el){
+ let cur=lsGet('magnifica-settab','svc');if(!SET_TABS.some(t=>t[0]===cur))cur='svc';
+ const grid=el.querySelector('.set-grid');if(!grid)return;
+ const tabOf=h=>{const t=SET_TABS.find(x=>x[2].includes(h));return t?t[0]:'svc'};
+ [...grid.children].forEach(c=>{const h=c.querySelector('h2');c.dataset.stab=tabOf(h?h.textContent.trim():'');c.hidden=c.dataset.stab!==cur});
+ const bar=document.createElement('div');bar.className='set-tabs';bar.setAttribute('role','tablist');
+ bar.innerHTML=SET_TABS.map(t=>`<button type="button" role="tab" data-stab-btn="${t[0]}" aria-selected="${t[0]===cur}">${t[1]}</button>`).join('');
+ el.insertBefore(bar,grid);
+}
 /* одноразово переносить назви груп, введені текстом, у список груп (ключі відсотків майстрів теж) */
 async function normalizeGroups(){
  if(!isOwner()||!state.cfg||!Array.isArray(state.cfg.services))return;
@@ -445,6 +457,7 @@ function initSettings(){
  sett.addEventListener('input',e=>{if(e.target.classList.contains('pr'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,7);if(e.target.classList.contains('du'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,3)});
  sett.addEventListener('click',e=>{
   const t=e.target;let b;
+  if((b=t.closest('[data-stab-btn]'))){lsSet('magnifica-settab',b.dataset.stabBtn);sett.querySelectorAll('[data-stab-btn]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));sett.querySelectorAll('.set-grid>[data-stab]').forEach(c=>c.hidden=c.dataset.stab!==b.dataset.stabBtn);return}
   if((b=t.closest('.rm'))){
    if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Видалити?';setTimeout(()=>{if(b.isConnected){b.dataset.armed='';b.textContent='✕'}},3500);return}
    const c=cfgDoc();
