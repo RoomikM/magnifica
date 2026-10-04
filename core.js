@@ -265,7 +265,7 @@ function workedHtml(D){
  const list=state.appts.filter(a=>inR(a.d)),W=workedCount(r,mk),done=W.n;
  const works=r==='all'?SV.reduce((t,x)=>t+(+(D.summary.services[x.id]||{}).count||0),0):D.days.filter(x=>inR(x.key)).reduce((t,x)=>t+Object.values(x.c||{}).reduce((a,v)=>a+(+v||0),0),0)+W.old;
  const up=list.filter(a=>isOk(a)&&!counted(a)).length,miss=list.filter(a=>!isOk(a)).length;
- return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${W.old&&r!=='all'?'≈ ':''}${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}${W.old?'<br>Старі дані (до записів) рахуються за послугами'+(r==='all'?'.':', по місяцях приблизно.'):''}</div></div>`;
+ return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${W.old&&r!=='all'?'≈ ':''}${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}<span class="opt">${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}</span></div></div>`;
 }
 function serviceCards(S){
  const max=Math.max(1,...SV.map(s=>S.services[s.id].amount));
