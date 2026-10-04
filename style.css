@@ -527,15 +527,16 @@ html[data-mode="desktop"] .skinbar.in-app{top:2px;left:50%;right:auto;transform:
 .worked-h b{font-size:22px;font-variant-numeric:tabular-nums}
 .worked-s{font-size:12px;color:var(--muted);margin-top:2px}
 .worked-s b{color:var(--text)}
-html[data-mode="desktop"] .worked{max-width:560px}
 
 /* «Відпрацьовано записів» і «Точка беззбитковості» в один рядок */
 .band-row{display:flex;gap:10px;align-items:stretch;margin-bottom:12px}
 .band-row>div{flex:1 1 0;min-width:0;display:flex}
 .band-row>div:empty{display:none}
 .band-row .card{margin:0;flex:1;max-width:none}
-html[data-mode="desktop"] .band-row{gap:14px;margin-bottom:18px}
-html[data-mode="desktop"] .band-row>div{max-width:560px}
+html[data-mode="desktop"] .band-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+html[data-mode="desktop"] .band-row>div{grid-column:span 2;max-width:none}
+html[data-mode="desktop"] .band-row>div:only-child{grid-column:span 4}
+html[data-mode="desktop"] .band-row .be-card,html[data-mode="desktop"] .band-row .worked{max-width:none}
 html[data-mode="phone"] .band-row .card{padding:8px 10px}
 html[data-mode="phone"] .worked-h{flex-direction:column;align-items:flex-start;gap:0;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 html[data-mode="phone"] .worked-h b{font-size:20px;color:var(--text);text-transform:none;letter-spacing:0}
