@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button><div class="ver">MAGNiFICA · v3</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4b</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -485,6 +485,7 @@ function initSettings(){
   if(t.closest('#exCsv')){exportCsv();return}
   if(t.closest('#imBtn')){$('impFile').click();return}
   if(t.closest('#manDay')){openDay();return}
+  if(t.closest('#hardRefresh')){(async()=>{try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}location.reload()})();return}
   if(t.closest('#kickAll2'))return;
   if(t.closest('#kickAll')){const c=cfgDoc();c.kick=Date.now();lsSet('magnifica-login-at',String(c.kick+1));saveCfg().then(()=>toast('Команда виходу надіслана'));return}
   if(t.closest('#logout')){Store.signOut();return}
