@@ -40,7 +40,7 @@ document.addEventListener('click',e=>{
  if(k==='sms')href='sms:+'+p+'?&body='+enc;
  else if(k==='wa'){href='https://wa.me/'+p+'?text='+enc;a.target='_blank'}
  else if(k==='vb'){href='viber://chat?number=%2B'+p;copy=true}
- else if(k==='tg'){href='https://t.me/+'+p;a.target='_blank';copy=true}
+ else if(k==='tg'){href='https://t.me/+'+p+'?text='+enc;a.target='_blank'}
  else if(k==='sg'){href='https://signal.me/#p/+'+p;a.target='_blank';copy=true}
  a.href=href;
  if(copy)copyText(text,'Текст скопійовано — вставте його в чат');
