@@ -115,7 +115,7 @@ function saveCfg(){
   .catch(e=>toast(errText(e)));
 }
 function svList(){
- const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,group:String(s.group||'').trim()}));
+ const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,gid:s.gid||'',group:(grpOf(s)||{}).name||''}));
  const seen=new Set(list.map(s=>s.id));
  const add=(id,name)=>{if(!seen.has(id)){seen.add(id);list.push({id,name:name||LEGACY_NAMES[id]||id,price:0,archived:true})}};
  state.days.forEach(v=>Object.keys((v&&v.a)||{}).forEach(id=>add(id)));
@@ -124,9 +124,16 @@ function svList(){
 }
 const svIndex=sid=>Math.max(0,SV.findIndex(s=>s.id===sid));
 /* групи послуг: «Манікюр» = комплекс, чистка, зняття лаку… Без групи послуга сама собі група */
-const grpKeyOfSv=s=>s?(s.group&&String(s.group).trim()?'g:'+String(s.group).trim().toLowerCase():s.id):'';
+const cfgGroups=()=>(state.cfg&&state.cfg.groups)||[];
+const grpOf=s=>{
+ if(!s)return null;
+ if(s.gid){const g=cfgGroups().find(x=>x.id===s.gid);if(g)return{key:'g:'+g.id,name:g.name}}
+ const t=String(s.group||'').trim();
+ return t?{key:'g:'+t.toLowerCase(),name:t}:null;
+};
+const grpKeyOfSv=s=>{const g=grpOf(s);return g?g.key:(s?s.id:'')};
 const svGrpKey=sid=>grpKeyOfSv(cfgServices().find(x=>x.id===sid))||sid;
-const svGrpName=(sid,fallback)=>{const s=cfgServices().find(x=>x.id===sid);return s?((s.group&&String(s.group).trim())||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
+const svGrpName=(sid,fallback)=>{const s=cfgServices().find(x=>x.id===sid);return s?((grpOf(s)||{}).name||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
 function svGroups(S,total){
  const map=new Map();
  SV.forEach(sv=>{

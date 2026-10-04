@@ -54,6 +54,7 @@ function renderSettings(force){
  const el=$('settings');if(!el)return;
  if(!isOwner()){el.innerHTML='';return}
  if(!force&&el.contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+ if(normalizeGroups&&state.cfg&&cfgServices().some(x=>!x.gid&&String(x.group||'').trim())){normalizeGroups().then(()=>renderSettings(true));return}
  const sv=cfgServices(),ct=cfgCats(),skin=document.documentElement.dataset.skin,mp=lsGet('magnifica-mode','auto');
  const staffRows=state.staff.map(s=>`<button class="cl" data-staff="${esc(s.id)}"><span class="av">${esc(initials(s.name))}</span>
   <span class="cl-m"><span class="cl-n">${esc(s.name)}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.owner?' · акаунт власника':s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
@@ -62,9 +63,12 @@ function renderSettings(force){
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
   <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
   <div class="setrow hd"><span>Назва</span><span>Ціна, ₴</span><span></span></div>
-  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><input class="grp" list="grplist" value="${esc(s.group||'')}" placeholder="Група на Огляді (необов’язково), напр. Манікюр" maxlength="40" aria-label="Група: ${esc(s.name)}"></div>`).join('')}
-  <datalist id="grplist">${[...new Set(sv.map(x=>String(x.group||'').trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
-  <button class="btn sm" id="addSvc">+ Додати послугу</button></div>
+  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><select class="grp" aria-label="Група: ${esc(s.name)}"><option value="">— без групи —</option>${grpOpts(s)}</select></div>`).join('')}
+  <button class="btn sm" id="addSvc">+ Додати послугу</button>
+  <div class="lbl2" style="margin-top:14px">Групи послуг</div>
+  <p class="set-p" style="margin-top:0">Група об’єднує кілька послуг в один банер на Огляді. Створіть групу тут або під час додавання послуги.</p>
+  ${cfgGroups().map(g=>`<div class="setrow cat" data-gid="${esc(g.id)}"><input class="nm" value="${esc(g.name)}" aria-label="Назва групи" maxlength="40"><span class="hint" style="margin:0">${sv.filter(x=>x.gid===g.id).length} посл.</span><button class="rm" data-rm-grp="${esc(g.id)}" aria-label="Видалити групу">✕</button></div>`).join('')||'<div class="hint" style="margin:0 0 6px">Груп ще немає.</div>'}
+  <button class="btn sm" id="addGrp">+ Додати групу</button></div>
  <div class="card"><h2 class="set-h">Категорії витрат</h2>
   <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати.</p>
   ${ct.map(c=>`<div class="setrow cat" data-cid="${esc(c.id)}"><input class="nm" value="${esc(c.name)}" aria-label="Назва категорії" maxlength="40"><label class="fx" title="Постійна витрата (для точки беззбитковості)"><input type="checkbox" data-fixed="${esc(c.id)}" ${isFixedCat(c.id)?'checked':''}> пост.</label><button class="rm" data-rm-cat="${esc(c.id)}" aria-label="Видалити категорію">✕</button>${isFixedCat(c.id)?`<label class="catamt"><span>Щомісячна сума, ₴ <small>(для беззбитковості)</small></span><input class="pr" data-famt="${esc(c.id)}" inputmode="numeric" placeholder="0" value="${c.amt>0?esc(c.amt):''}"></label>`:''}</div>`).join('')}
@@ -108,6 +112,75 @@ function copyText(t,ok,fail){
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,old);else old();
 }
 const copyAccess=s=>copyText(accessText(s),s.pw?'Доступ скопійовано':'Скопійовано без пароля (його не збережено)');
+
+/* групи послуг */
+const grpOpts=sv=>{
+ const cur=grpOf(sv),gs=cfgGroups().slice();
+ let h=gs.map(g=>`<option value="${esc(g.id)}" ${sv.gid===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
+ if(cur&&!gs.some(g=>sv.gid===g.id))h+=`<option value="" selected>${esc(cur.name)}</option>`;
+ return h;
+};
+/* одноразово переносить назви груп, введені текстом, у список груп (ключі відсотків майстрів теж) */
+async function normalizeGroups(){
+ if(!isOwner()||!state.cfg||!Array.isArray(state.cfg.services))return;
+ const c=cfgDoc(),legacy=c.services.filter(x=>!x.gid&&String(x.group||'').trim());
+ if(!legacy.length)return;
+ c.groups=c.groups||[];
+ const map={};
+ legacy.forEach(x=>{
+  const nm=String(x.group).trim(),k=nm.toLowerCase();
+  let g=c.groups.find(y=>y.name.toLowerCase()===k);
+  if(!g){g={id:'g'+newId().slice(0,8),name:nm};c.groups.push(g)}
+  x.gid=g.id;delete x.group;map['g:'+k]='g:'+g.id;
+ });
+ await saveCfg();
+ for(const st of state.staff){
+  if(!st.pcts)continue;let ch=false;
+  Object.keys(map).forEach(o=>{if(st.pcts[o]!=null){st.pcts[map[o]]=st.pcts[o];delete st.pcts[o];ch=true}});
+  if(ch)try{await Store.saveStaff(st.id,st)}catch(e){}
+ }
+}
+function openNewService(){
+ if(!isOwner())return;
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Нова послуга</h2>${closeBtn}</div>
+  <label class="lf"><span>Назва</span><input id="ns-name" maxlength="40" autocomplete="off" placeholder="напр. Комплекс"></label>
+  <label class="lf"><span>Ціна, ₴</span><input id="ns-price" inputmode="numeric" placeholder="0"></label>
+  <label class="lf"><span>Група на Огляді</span><select id="ns-grp"><option value="">— без групи —</option>${cfgGroups().map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('')}<option value="__new">＋ Нова група…</option></select></label>
+  <label class="lf" id="ns-newbox" hidden><span>Назва нової групи</span><input id="ns-newgrp" maxlength="40" autocomplete="off" placeholder="напр. Манікюр"></label>
+  <div class="err" id="ns-err" role="alert" hidden></div>
+  <div class="actions"><button class="btn primary" id="ns-save">Додати</button></div>`);
+ digitsOnly($('ns-price'));
+ $('ns-grp').addEventListener('change',()=>{const n=$('ns-grp').value==='__new';$('ns-newbox').hidden=!n;if(n)$('ns-newgrp').focus()});
+ $('ns-save').addEventListener('click',async()=>{
+  const name=$('ns-name').value.trim(),err=m=>{const e=$('ns-err');e.textContent=m;e.hidden=!m};
+  if(!name){err('Вкажіть назву послуги.');return}
+  const c=cfgDoc();let gid=$('ns-grp').value;
+  if(gid==='__new'){
+   const gn=$('ns-newgrp').value.trim();if(!gn){err('Вкажіть назву групи.');return}
+   c.groups=c.groups||[];
+   let g=c.groups.find(x=>x.name.toLowerCase()===gn.toLowerCase());
+   if(!g){g={id:'g'+newId().slice(0,8),name:gn};c.groups.push(g)}
+   gid=g.id;
+  }
+  c.services.push({id:'s'+newId().slice(0,8),name,price:numOf($('ns-price').value),gid:gid||''});
+  await saveCfg();closeSheet();renderAll();renderSettings(true);toast('Послугу додано');
+ });
+ setTimeout(()=>$('ns-name').focus(),50);
+}
+function openNewGroup(){
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Нова група</h2>${closeBtn}</div>
+  <label class="lf"><span>Назва групи</span><input id="ng-name" maxlength="40" autocomplete="off" placeholder="напр. Манікюр"></label>
+  <div class="err" id="ng-err" role="alert" hidden></div>
+  <div class="actions"><button class="btn primary" id="ng-save">Додати</button></div>`);
+ $('ng-save').addEventListener('click',async()=>{
+  const n=$('ng-name').value.trim(),e=$('ng-err');
+  if(!n){e.textContent='Вкажіть назву.';e.hidden=false;return}
+  const c=cfgDoc();c.groups=c.groups||[];
+  if(!c.groups.some(x=>x.name.toLowerCase()===n.toLowerCase()))c.groups.push({id:'g'+newId().slice(0,8),name:n});
+  await saveCfg();closeSheet();renderSettings(true);
+ });
+ setTimeout(()=>$('ng-name').focus(),50);
+}
 
 /* відсотки майстра за видами робіт */
 function pctsHtml(st){
@@ -354,9 +427,13 @@ function initSettings(){
   if(row.dataset.sid){
    const s=c.services.find(x=>x.id===row.dataset.sid);if(!s)return;
    if(e.target.classList.contains('nm')){const v=e.target.value.trim();if(!v){e.target.value=s.name;return}s.name=v}
-   else if(e.target.classList.contains('grp')){s.group=e.target.value.trim()}
+   else if(e.target.classList.contains('grp')){s.gid=e.target.value;delete s.group}
    else{s.price=numOf(e.target.value);e.target.value=s.price?String(s.price):''}
    saveCfg().then(()=>toast('Збережено'));
+  }else if(row.dataset.gid){
+   const g=(c.groups||[]).find(x=>x.id===row.dataset.gid);if(!g)return;
+   const v=e.target.value.trim();if(!v){e.target.value=g.name;return}
+   g.name=v;saveCfg().then(()=>{toast('Збережено');renderAll()});return;
   }else if(row.dataset.cid){
    const k=c.expCats.find(x=>x.id===row.dataset.cid);if(!k)return;
    const v=e.target.value.trim();if(!v){e.target.value=k.name;return}
@@ -370,10 +447,12 @@ function initSettings(){
    if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Видалити?';setTimeout(()=>{if(b.isConnected){b.dataset.armed='';b.textContent='✕'}},3500);return}
    const c=cfgDoc();
    if(b.dataset.rmSvc)c.services=c.services.filter(x=>x.id!==b.dataset.rmSvc);
+   else if(b.dataset.rmGrp){c.groups=(c.groups||[]).filter(x=>x.id!==b.dataset.rmGrp);c.services.forEach(x=>{if(x.gid===b.dataset.rmGrp){x.gid='';delete x.group}})}
    else c.expCats=c.expCats.filter(x=>x.id!==b.dataset.rmCat);
    saveCfg();renderAll();renderSettings(true);return;
   }
-  if(t.closest('#addSvc')){cfgDoc().services.push({id:'s'+newId().slice(0,8),name:'Нова послуга',price:0});saveCfg();renderSettings(true);const r=[...sett.querySelectorAll('.setrow[data-sid] .nm')].pop();if(r){r.focus();r.select()}return}
+  if(t.closest('#addSvc')){openNewService();return}
+  if(t.closest('#addGrp')){openNewGroup();return}
   if(t.closest('#addCat')){cfgDoc().expCats.push({id:'c'+newId().slice(0,8),name:'Нова категорія'});saveCfg();renderSettings(true);const r=[...sett.querySelectorAll('.setrow[data-cid] .nm')].pop();if(r){r.focus();r.select()}return}
   if(t.closest('#addStaff')){openStaff();return}
   if(t.closest('#addSelf')){openSelf();return}
