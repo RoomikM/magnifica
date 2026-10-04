@@ -178,16 +178,33 @@ addEventListener('error',e=>{
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
    appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
-   cfg:c=>{state.cfg=c;if(state.status==='ready')renderAll()},
+   cfg:c=>{state.cfg=c;if(checkKick())return;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid});
   if(staff&&!stats){state.status='ready';renderAll()}
   logLogin();autoPrune();
  }
+ /* автовихід на комп'ютері: бездіяльність + віддалений вихід з телефону (meta/settings.kick) */
+ const doLock=()=>{lsSet('magnifica-lo-uid','');Store.signOut()};
+ function checkKick(){
+  if(isMobile()||!state.user)return false;
+  const k=+(state.cfg&&state.cfg.kick)||0,at=+lsGet('magnifica-login-at','0')||0;
+  if(k&&k>at){doLock();return true}
+  return false;
+ }
+ let lastAct=Date.now();
+ ['mousemove','keydown','mousedown','scroll','touchstart','wheel'].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true,capture:true}));
+ const idleCheck=()=>{
+  const m=+lsGet('magnifica-autolo','0')||0;
+  if(m>0&&state.user&&!isMobile()&&Date.now()-lastAct>m*60000)doLock();
+ };
+ setInterval(idleCheck,15000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleCheck()});
  Store.onAuth(user=>{
   stopData();if(unsubMe){unsubMe();unsubMe=null}sig='';
-  resetData();state.user=user;
-  if(!user){state.status='loading';setView('login');return}
+  resetData();state.user=user;lastAct=Date.now();
+  if(user&&lsGet('magnifica-lo-uid','')!==user.uid){lsSet('magnifica-lo-uid',user.uid);lsSet('magnifica-login-at',String(Date.now()))}
+  if(!user){lsSet('magnifica-lo-uid','');state.status='loading';setView('login');return}
   state.status='loading';setView('app');renderAll();
   unsubMe=Store.subscribeMe(user.uid,me=>{
    if(me&&me.owner&&sig==='own'){state.me=me;if(state.status==='ready')renderAll();return}

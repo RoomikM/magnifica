@@ -88,6 +88,12 @@ function renderSettings(force){
  <div class="card" style="grid-column:1/-1"><h2 class="set-h">Логи</h2>
   <p class="set-p">Усі дії користувачів сайту: хто, коли і що створив, змінив чи видалив, а також входи.</p>
   <div id="logBox"></div></div>
+ <div class="card"><h2 class="set-h">Безпека</h2>
+  <p class="set-p">Щоб майстри не зайшли у ваш акаунт на комп’ютері, коли вас немає. Працює лише в комп’ютерній версії сайту, телефон не чіпає.</p>
+  <label class="lf"><span>Автовихід на цьому комп’ютері після бездіяльності</span><select id="autolo">${[[0,'Вимкнено'],[5,'5 хв'],[10,'10 хв'],[15,'15 хв'],[30,'30 хв'],[60,'1 година']].map(([v,n])=>`<option value="${v}" ${(+lsGet('magnifica-autolo','0')||0)===v?'selected':''}>${n}</option>`).join('')}</select></label>
+  <div class="hint" style="margin:0 0 10px">Це налаштування окремо для кожного пристрою.</div>
+  <button class="btn sm" id="kickAll">Вийти на всіх комп’ютерах</button>
+  <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
   <button class="btn sm" id="logout">Вийти</button><div class="ver">MAGNiFICA · v3</div></div>
@@ -122,7 +128,7 @@ const grpOpts=sv=>{
  return h;
 };
 /* вкладки налаштувань: картки групуються за заголовком */
-const SET_TABS=[['svc','Послуги',['Послуги та ціни','Категорії витрат']],['staff','Працівники',['Працівники']],['msg','Повідомлення',['Повідомлення клієнтам']],['look','Вигляд',['Вигляд','Акаунт']],['data','Дані',['Дані','Логи']]];
+const SET_TABS=[['svc','Послуги',['Послуги та ціни','Категорії витрат']],['staff','Працівники',['Працівники']],['msg','Повідомлення',['Повідомлення клієнтам']],['look','Вигляд',['Вигляд']],['sec','Безпека',['Безпека','Акаунт']],['data','Дані',['Дані','Логи']]];
 function applySetTab(el){
  let cur=lsGet('magnifica-settab','svc');if(!SET_TABS.some(t=>t[0]===cur))cur='svc';
  const grid=el.querySelector('.set-grid');if(!grid)return;
@@ -435,6 +441,7 @@ async function importFile(f){
 function initSettings(){
  const sett=$('settings');
  sett.addEventListener('change',e=>{
+  if(e.target.id==='autolo'){lsSet('magnifica-autolo',e.target.value);toast('Збережено');return}
   const row=e.target.closest('.setrow');if(!row||e.target.matches('[data-fixed],[data-famt]'))return;
   const c=cfgDoc();
   if(row.dataset.sid){
@@ -478,6 +485,7 @@ function initSettings(){
   if(t.closest('#exCsv')){exportCsv();return}
   if(t.closest('#imBtn')){$('impFile').click();return}
   if(t.closest('#manDay')){openDay();return}
+  if(t.closest('#kickAll')){const c=cfgDoc();c.kick=Date.now();lsSet('magnifica-login-at',String(c.kick+1));saveCfg().then(()=>toast('Команда виходу надіслана'));return}
   if(t.closest('#logout')){Store.signOut();return}
  });
  $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)});
