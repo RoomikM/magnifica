@@ -461,5 +461,5 @@ details summary{cursor:pointer;font-weight:800;font-size:13px}
 .slot.busy{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line) 5px 6px);color:var(--muted);text-decoration:line-through}
 .slot.on{background:var(--accent);border-color:var(--accent);color:var(--card-solid);text-decoration:none}
 .slot:disabled{cursor:default}
+#p-tc{margin-bottom:10px!important}
 #p-tc.warn{color:#c0392b;font-weight:700}
-@media (min-width:700px){.slots{grid-template-columns:repeat(14,1fr)}}
