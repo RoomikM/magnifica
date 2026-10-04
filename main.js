@@ -92,11 +92,34 @@ $('loginForm').addEventListener('submit',async e=>{
 {const bc=$('brandHome').cloneNode(true);bc.removeAttribute('id');bc.removeAttribute('role');bc.removeAttribute('tabindex');bc.style.cursor='default';$('loginBrand').appendChild(bc)}
 $('installHint').hidden=!(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!navigator.standalone);
 
+/* ---------- маячок про нові записи ---------- */
+const seenAppts=new Set(),mineAppts=new Set();let apptsInit=false;
+state.newAppts=0;
+function drawBadge(){
+ const b=document.querySelector('#nav [data-tab="records"]');if(!b)return;
+ let i=b.querySelector('.nb');
+ if(!state.newAppts){if(i)i.remove()}else{if(!i){i=document.createElement('i');i.className='nb';b.appendChild(i)}i.textContent=state.newAppts>9?'9+':state.newAppts}
+ document.title=(state.newAppts?'('+state.newAppts+') ':'')+'MAGNiFICA';
+}
+function trackNew(list){
+ const fresh=list.filter(a=>!seenAppts.has(a.id));
+ list.forEach(a=>seenAppts.add(a.id));
+ if(!apptsInit){apptsInit=true;return}
+ const add=fresh.filter(a=>!mineAppts.has(a.id)&&(+a.created||0)>Date.now()-12*3600*1000);
+ if(!add.length)return;
+ if(state.tab!=='records'||document.hidden){state.newAppts+=add.length;drawBadge()}
+ const a=add[add.length-1];
+ toast('Новий запис: '+(a.name||'без імені')+' · '+full(a.d).slice(0,5)+' '+a.t+(a.mn?' · '+a.mn:''));
+ try{if(navigator.vibrate)navigator.vibrate(120)}catch(e){}
+}
+{const o=Store.saveAppt;if(o)Store.saveAppt=function(id){mineAppts.add(id);return o.apply(Store,arguments)}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab==='records'&&state.newAppts){state.newAppts=0;drawBadge()}});
+
 /* ---------- запуск ---------- */
 function setView(v){document.documentElement.setAttribute('data-view',v)}
 function resetData(){
  state.days=new Map();state.baseline={};state.appts=[];state.exps=[];state.sals=[];state.clients=[];state.staff=[];state.cfg=null;
- state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
+ state.newAppts=0;seenAppts.clear();apptsInit=false;drawBadge();state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
 }
 setSkin(document.documentElement.getAttribute('data-skin')||'night');
 setNavH();addEventListener('resize',()=>{applyMode();setNavH()});
@@ -130,7 +153,7 @@ addEventListener('error',e=>{
   unsubData=Store.subscribe({
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
-   appts:upd('appts'),exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
+   appts:l=>{trackNew(l);upd('appts')(l)},exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
    cfg:c=>{state.cfg=c;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid});

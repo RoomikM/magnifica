@@ -338,6 +338,7 @@ function updateFab(){
 }
 function setTab(t,scroll){
  state.tab=t;
+ if(t==='records'&&state.newAppts){state.newAppts=0;if(typeof drawBadge==='function')drawBadge()}
  if(t!=='settings'&&typeof stopLogs==='function'){stopLogs();state.ui.logsOpen=false}
  document.querySelectorAll('#nav button,#gear').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));
  document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===t));
