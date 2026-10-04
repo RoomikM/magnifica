@@ -329,7 +329,7 @@ function fabInfo(){
   return can('expEdit')?['Додати витрату',()=>openExp()]:null;
  }
  if(t==='clients')return can('clientsEdit')?['Додати клієнта',()=>openClient()]:null;
- if(t==='settings')return null;
+ if(t!=='records')return null;
  return can('apptAdd')?['Зробити запис',()=>openAppt({d:state.tab==='records'&&state.ui.aview==='day'?state.ui.adate:todayKey()})]:null;
 }
 function updateFab(){
