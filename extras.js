@@ -155,11 +155,12 @@ function breakevenHtml(D){
  const fixed=m=>state.exps.filter(x=>String(x.d).startsWith(m)&&isFixedCat(x.cat)).reduce((t,x)=>t+(+x.amount||0),0);
  const sal=m=>state.sals.filter(x=>String(x.d).startsWith(m)).reduce((t,x)=>t+(+x.amount||0),0);
  const f=Math.max(fixed(mk),fixed(pk)),s=Math.max(sal(mk),sal(pk)),target=f+s;
- if(!target)return`<div class="card"><h2>Точка беззбитковості</h2><div class="hint" style="margin:0">Поки немає даних. Шестерня → «Категорії витрат» → поставте галочку «пост.» біля категорій постійних витрат (оренда, податки) і внесіть їх у «Витрати» за цей місяць, або внесіть зарплати.</div></div>`;
+ const TT='Постійні витрати (категорії з позначкою «пост.») та зарплати; береться більше з цього й минулого місяця';
+ if(!target)return`<div class="card be-card" title="${TT}"><div class="be-head"><h2>Точка беззбитковості</h2><span class="be-n">немає даних</span></div></div>`;
  const row=D.monthly.find(r=>r.key===mk),earned=row?row.total:0,pct=Math.min(100,earned/target*100),left=Math.max(0,target-earned);
- return`<div class="card"><h2>Точка беззбитковості</h2><div class="caption">Постійні витрати (категорії з позначкою «пост.») та зарплати: беремо більше з цього й минулого місяця</div>
-  <div class="be-row"><b>${money(earned)}</b><span>із ${money(target)}</span></div><div class="bar be"><i style="width:${pct.toFixed(1)}%"></i></div>
-  <div class="hint" style="margin:8px 0 0">${left?`Залишилось заробити ${money(left)}, щоб покрити постійні витрати${s?` (оренда й інше ${money(f)}, зарплати ${money(s)})`:''}.`:`Постійні витрати покрито. Усе, що понад ${money(target)}, — чистий дохід місяця.`}</div></div>`;
+ return`<div class="card be-card" title="${TT}"><div class="be-head"><h2>Точка беззбитковості</h2><span class="be-n"><b>${money(earned)}</b> / ${money(target)}</span></div>
+  <div class="bar be"><i style="width:${pct.toFixed(1)}%"></i></div>
+  <div class="be-note">${left?`Залишилось ${money(left)}`:`Покрито ✓ · понад ${money(target)} — чистий дохід`}</div></div>`;
 }
 
 /* ---------- налаштування: шаблони, пост. категорії, очищення ---------- */
