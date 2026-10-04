@@ -425,3 +425,4 @@ textarea.rules{display:block;width:100%;font:12px/1.4 ui-monospace,Menlo,Consola
 @media (max-width:420px){.tiles{grid-template-columns:repeat(2,1fr)}}
 
 .pwrow{display:flex;gap:8px;align-items:stretch}.pwrow input{flex:1;min-width:0}.pwrow .btn{white-space:nowrap}
+#brandHome{cursor:pointer;-webkit-tap-highlight-color:transparent}#brandHome:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}

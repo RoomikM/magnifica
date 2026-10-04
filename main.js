@@ -7,6 +7,11 @@ $('sheet').addEventListener('click',e=>{if(e.target===$('sheet')||e.target.close
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeSheet()});
 $('profit').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(b){state.ui.range=b.dataset.range;renderAll()}});
 
+/* логотип → головна */
+const goHome=()=>{const t=['overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
+$('brandHome').addEventListener('click',goHome);
+$('brandHome').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}});
+
 /* ---------- записи ---------- */
 $('records').addEventListener('click',e=>{
  const u=state.ui,t=e.target;let b;
@@ -84,7 +89,7 @@ $('loginForm').addEventListener('submit',async e=>{
  catch(err){er.textContent=authErr(err);er.hidden=false}
  b.disabled=false;b.textContent='Увійти';
 });
-$('loginBrand').appendChild(document.querySelector('.brand').cloneNode(true));
+{const bc=$('brandHome').cloneNode(true);bc.removeAttribute('id');bc.removeAttribute('role');bc.removeAttribute('tabindex');bc.style.cursor='default';$('loginBrand').appendChild(bc)}
 $('installHint').hidden=!(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!navigator.standalone);
 
 /* ---------- запуск ---------- */
