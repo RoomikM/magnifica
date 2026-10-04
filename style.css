@@ -597,3 +597,7 @@ html[data-mode="desktop"] .setrow[data-sid]>.pr{grid-column:4;grid-row:1}
 html[data-mode="desktop"] .setrow[data-sid]>.rm{grid-column:5;grid-row:1}
 html[data-mode="desktop"] .setrow.cat{gap:14px;margin-bottom:12px}
 html[data-mode="desktop"] .set-p{max-width:760px}
+.setrow select.grp{font:inherit;font-size:13px;color:var(--text);background-color:var(--bg);border:1px solid var(--line);border-radius:11px;padding:8px 30px 8px 11px;min-width:0;width:100%;cursor:pointer;-webkit-appearance:none;appearance:none;text-overflow:ellipsis;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.setrow select.grp:hover{border-color:var(--accent)}
+.setrow select.grp option{background:var(--card-solid);color:var(--text)}
+html[data-mode="desktop"] .setrow[data-sid]>.grp{font-size:15px;padding:9px 34px 9px 12px;border-radius:12px}
