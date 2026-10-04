@@ -146,6 +146,7 @@ async function migrateClients(){
  state.migrated=true;
  const orphans=state.appts.filter(a=>!a.cid&&(a.name||a.phone));
  if(!orphans.length)return;
+ state.quiet=true;
  const groups=new Map();
  orphans.forEach(a=>{
   const dg=digitsOf(a.phone);
@@ -165,4 +166,5 @@ async function migrateClients(){
    for(const a of list)await Store.saveAppt(a.id,{...a,cid:id});
   }
  }catch(e){state.migrated=false}
+ state.quiet=false;
 }

@@ -79,10 +79,14 @@ function renderSettings(force){
  <div class="card"><h2 class="set-h">Дані</h2>
   <p class="set-p">Копія зберігає все: дні, записи, клієнтів, витрати, виплати, послуги. Корисно робити раз на місяць.</p>
   <div class="btnrow"><button class="btn sm" id="exJson">Копія (JSON)</button><button class="btn sm" id="exCsv">Таблиця (CSV)</button><button class="btn sm" id="imBtn">Імпорт з файлу</button><button class="btn sm" id="manDay">Внести день сумою</button></div></div>
+ <div class="card" style="grid-column:1/-1"><h2 class="set-h">Логи</h2>
+  <p class="set-p">Усі дії користувачів сайту: хто, коли і що створив, змінив чи видалив, а також входи.</p>
+  <div id="logBox"></div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
   <button class="btn sm" id="logout">Вийти</button><div class="ver">MAGNiFICA · v3</div></div>
  </div>`;
+ renderLogs();
 }
 
 /* ---------- доступ працівника: логін, пароль, копіювання ---------- */

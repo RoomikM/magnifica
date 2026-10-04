@@ -69,7 +69,7 @@ function rowOpen(e){
 $('dailyTable').addEventListener('click',rowOpen);
 $('dailyTable').addEventListener('keydown',rowOpen);
 
-initSettings();
+initSettings();initLogs();installLogging();
 $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)});
 
 /* ---------- вхід ---------- */
@@ -135,6 +135,7 @@ addEventListener('error',e=>{
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid});
   if(staff&&!stats){state.status='ready';renderAll()}
+  logLogin();
  }
  Store.onAuth(user=>{
   stopData();if(unsubMe){unsubMe();unsubMe=null}sig='';
