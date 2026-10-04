@@ -117,11 +117,11 @@ function mastersData(){
   const paid=state.sals.filter(x=>x.sid===id&&inP(x.d)).reduce((t,x)=>t+(+x.amount||0),0);
   return{id,name,n:done.length,up:mine.filter(a=>isOk(a)&&!counted(a)).length,rev,avg:done.length?rev/done.length:0,
    noshow:mine.filter(a=>a.st==='noshow').length,cancel:mine.filter(a=>a.st==='cancel').length,
-   clients:new Set(done.map(a=>a.cid||a.name)).size,pct:st&&+st.pct>0?+st.pct:0,paid,
+   clients:new Set(done.map(a=>a.cid||a.name)).size,pct:st&&+st.pct>0?+st.pct:0,rate:hasRates(st),custom:hasCustomPcts(st),owe:earnOf(st,done),paid,
    hours:done.reduce((t,a)=>t+(+a.dur||60),0)/60};
  }).filter(r=>r.n||r.up||r.noshow||r.cancel||masters().some(m=>m.id===r.id));
  const total=rows.reduce((t,r)=>t+r.rev,0);
- rows.forEach(r=>{r.share=total?r.rev/total*100:0;r.owe=r.pct?Math.round(r.rev*r.pct/100):0});
+ rows.forEach(r=>{r.share=total?r.rev/total*100:0});
  return{rows:rows.sort((a,b)=>b.rev-a.rev),total};
 }
 function renderMasters(){
@@ -134,7 +134,7 @@ function renderMasters(){
   <div class="tiles"><div><span>Візитів</span><b>${r.n}</b></div><div><span>Середній чек</span><b>${r.avg?money(Math.round(r.avg)):'—'}</b></div><div><span>Клієнтів</span><b>${r.clients}</b></div>
    <div><span>Пропусків</span><b>${r.noshow}</b></div><div><span>Скасувань</span><b>${r.cancel}</b></div><div><span>Попереду</span><b>${r.up}</b></div></div>
   <div class="bar"><i style="width:${Math.min(100,r.share).toFixed(1)}%;background:${r.id?personColor(r.id):'var(--accent)'}"></i></div>
-  ${fin?`<div class="sumline" style="margin-top:8px"><span>Виплачено за період: <b>${money(r.paid)}</b></span>${r.pct?`<span>${r.pct}% від виручки: <b>${money(r.owe)}</b></span><span>${r.owe-r.paid>0?'До виплати: <b>'+money(r.owe-r.paid)+'</b>':'Переплата: <b>'+money(r.paid-r.owe)+'</b>'}</span>`:''}</div>`:''}</div>`).join('');
+  ${fin?`<div class="sumline" style="margin-top:8px"><span>Виплачено за період: <b>${money(r.paid)}</b></span>${r.rate?`<span>${r.custom?'За ставками видів робіт':r.pct+'% від виручки'}: <b>${money(r.owe)}</b></span><span>${r.owe-r.paid>0?'До виплати: <b>'+money(r.owe-r.paid)+'</b>':'Переплата: <b>'+money(r.paid-r.owe)+'</b>'}</span>`:''}</div>`:''}</div>`).join('');
  el.innerHTML=nav+`<div class="sumline"><span>Майстрів: <b>${D.rows.length}</b></span><span>Виручка по записах: <b>${money(D.total)}</b></span></div>`+(cards||'<div class="card"><div class="empty">Поки немає записів із майстрами. Створіть працівників з позначкою «Майстер» у налаштуваннях.</div></div>');
 }
 $('masters').addEventListener('click',e=>{

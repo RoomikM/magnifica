@@ -108,6 +108,21 @@ function copyText(t,ok,fail){
 }
 const copyAccess=s=>copyText(accessText(s),s.pw?'Доступ скопійовано':'Скопійовано без пароля (його не збережено)');
 
+/* відсотки майстра за видами робіт */
+function pctsHtml(st){
+ const sv=svList().filter(x=>!x.archived);if(!sv.length)return '';
+ const p=(st&&st.pcts)||{};
+ return `<details class="pcts"${hasCustomPcts(st)?' open':''}><summary>% за видами робіт (необов’язково)</summary>
+  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться загальний %. Можна поставити 0.</div>
+  ${sv.map(x=>`<label class="pctrow"><span>${esc(x.name)}</span><input data-spct="${esc(x.id)}" inputmode="numeric" maxlength="3" placeholder="як загальний" value="${p[x.id]!=null&&p[x.id]!==''?esc(p[x.id]):''}"></label>`).join('')}</details>`;
+}
+function readPcts(){
+ const o={};
+ document.querySelectorAll('[data-spct]').forEach(i=>{const v=i.value.replace(/\D/g,'');if(v!=='')o[i.dataset.spct]=Math.min(100,+v)});
+ return o;
+}
+const bindPcts=()=>document.querySelectorAll('[data-spct]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,3)}));
+
 /* ---------- працівник ---------- */
 function openStaff(id){
  if(!isOwner())return;
@@ -140,10 +155,11 @@ function openStaff(id){
   <div class="fgrid" style="grid-template-columns:1fr 1fr 1fr"><label class="lf"><span>Виплата</span><select id="st-freq"><option value="">не задано</option><option value="day" ${pay.freq==='day'?'selected':''}>щодня</option><option value="week" ${pay.freq==='week'?'selected':''}>щотижня</option><option value="month" ${pay.freq==='month'?'selected':''}>щомісяця</option></select></label>
    <label class="lf"><span>Сума, ₴</span><input id="st-pay" inputmode="numeric" value="${pay.amount||''}" placeholder="0"></label>
    <label class="lf"><span>Рахувати з</span><input id="st-start" type="date" value="${esc(pay.start||todayKey())}"></label></div>
-  <label class="lf"><span>% від виручки майстра (довідково, для вкладки «Майстри»)</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
+  <label class="lf"><span>Загальний % від виручки майстра</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
+  ${pctsHtml(s)}
   <div class="err" id="st-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
- digitsOnly($('st-pay'));digitsOnly($('st-pct'));
+ digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts();
  const err=m=>{const e=$('st-err');e.textContent=m;e.hidden=!m};
  const showP=()=>{$('st-pbox').hidden=!(hasLogin||($('st-login')&&$('st-login').checked))};
  if(!hasLogin){$('st-login').addEventListener('change',()=>{$('st-lbox').hidden=!$('st-login').checked;showP()})}
@@ -206,7 +222,7 @@ function openStaff(id){
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
-    pct:Math.min(100,numOf($('st-pct').value)),pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
@@ -230,10 +246,11 @@ function openSelf(ex){
   <label class="lf"><span>Ім’я в записах</span><input id="sf-name" value="${esc(nm0)}" maxlength="60" autocomplete="off"></label>
   <label class="lf"><span>Посада</span><input id="sf-role" value="${esc(ex?ex.role||'':'адміністратор')}" maxlength="60" autocomplete="off"></label>
   <label class="chk"><input type="checkbox" id="sf-master" ${!ex||ex.master?'checked':''}> Майстер: приймаю клієнтів</label>
-  <label class="lf"><span>% від виручки (для кабінету та вкладки «Майстри»)</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
+  <label class="lf"><span>Загальний % від виручки</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
+  ${pctsHtml(ex)}
   <div class="err" id="sf-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="sf-del">Прибрати зі списку</button>':''}<button class="btn primary" id="sf-save">Зберегти</button></div>`);
- digitsOnly($('sf-pct'));
+ digitsOnly($('sf-pct'));bindPcts();
  const err=m=>{const e=$('sf-err');e.textContent=m;e.hidden=!m};
  if(ex)arm($('sf-del'),'Прибрати зі списку',async()=>{
   await Store.deleteStaff(uid);await syncPeople(state.staff.filter(x=>x.id!==uid));closeSheet();toast('Вас прибрано зі списку майстрів');
@@ -243,7 +260,7 @@ function openSelf(ex){
   err('');const b=$('sf-save');b.disabled=true;b.textContent='Зберігаю…';
   try{
    const obj={id:uid,name,role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
-    pct:Math.min(100,numOf($('sf-pct').value)),pay:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),pay:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(uid,obj);
    await syncPeople(state.staff.filter(x=>x.id!==uid).concat([obj]));
    closeSheet();toast('Збережено');

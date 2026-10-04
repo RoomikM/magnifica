@@ -547,3 +547,10 @@ html[data-mode="phone"] .be-card .be-n{font-size:10.5px;white-space:normal}
 html[data-mode="phone"] .be-card .be-n b{font-size:16px}
 html[data-mode="phone"] .be-card .bar{height:4px;margin-top:5px}
 html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
+
+/* відсотки за видами робіт */
+.pcts{margin:2px 0 12px;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.pcts summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+.pctrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
+.pctrow span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pctrow input{width:110px;flex:none;font:inherit;font-size:16px;text-align:right;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px}

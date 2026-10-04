@@ -139,6 +139,11 @@ function syncPeople(list){
 /* ---------- записи: статуси ---------- */
 /* знижка/абонемент: частка, на яку множаться ціни робіт, щоб суми послуг дорівнювали total */
 function itemFactor(a){const s=(a.items||[]).reduce((t,i)=>t+(+i.price||0),0);return s>0&&a.total!=null&&isFinite(+a.total)?(+a.total)/s:1}
+/* відсоток майстра: окремий для кожного виду робіт (pcts), інакше загальний (pct) */
+const pctFor=(st,sid)=>{if(!st)return 0;const p=st.pcts&&st.pcts[sid];return p!=null&&p!==''&&isFinite(+p)?Math.min(100,Math.max(0,+p)):(+st.pct>0?+st.pct:0)};
+const hasCustomPcts=st=>!!st&&!!st.pcts&&Object.values(st.pcts).some(v=>v!==''&&v!=null&&isFinite(+v));
+const hasRates=st=>!!st&&(+st.pct>0||hasCustomPcts(st));
+const earnOf=(st,list)=>Math.round(list.reduce((t,a)=>{const f=itemFactor(a);return t+(a.items||[]).reduce((x,i)=>x+(+i.price||0)*f*pctFor(st,i.sid)/100,0)},0));
 const isOk=a=>a.st!=='cancel'&&a.st!=='noshow';
 const counted=a=>isOk(a)&&(a.d+' '+a.t)<=nowKey();
 
