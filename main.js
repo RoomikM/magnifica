@@ -3,8 +3,8 @@
 
 document.querySelectorAll('#nav button,#gear').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab,true)));
 $('fab').addEventListener('click',()=>{const f=fabInfo();if(f)f[1]()});
-$('sheet').addEventListener('click',e=>{if(e.target===$('sheet')||e.target.closest('[data-close]'))closeSheet()});
-addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeSheet()});
+/* вікно закривається лише хрестиком або після «Зберегти»: випадковий тап повз картку чи Esc не губить введені дані */
+$('sheet').addEventListener('click',e=>{if(e.target.closest('[data-close]'))closeSheet()});
 $('profit').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(b){state.ui.range=b.dataset.range;renderAll()}});
 
 /* логотип → головна */
