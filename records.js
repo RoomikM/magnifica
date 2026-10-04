@@ -320,6 +320,7 @@ function openAppt(init){
    const cid=await resolveClient(a);
    const obj={id:a.id||newId(),d,t,dur,cid,name:a.name,phone:a.phone,m,mn:m?personName(m,a.mn):'',note:$('p-note').value.trim(),
     items:a.items.map(i=>({sid:i.sid,name:i.name,price:+i.price||0})),total:total(),disc:a.subOn?0:(+a.disc||0),subUsed:false,st:a.st,created:a.created||Date.now()};
+   if(ex&&ex.by)obj.by=ex.by;
    const nowSub=!!(a.subOn&&cid&&a.cid===cid&&subC()&&a.st!=='cancel'&&can('clientsEdit'));
    obj.subUsed=nowSub;
    const wasSub=!!(ex&&ex.subUsed);

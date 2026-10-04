@@ -103,19 +103,30 @@ function drawBadge(){
  if(!state.newAppts){if(i)i.remove()}else{if(!i){i=document.createElement('i');i.className='nb';b.appendChild(i)}i.textContent=state.newAppts>9?'9+':state.newAppts}
  document.title=(state.newAppts?'('+state.newAppts+') ':'')+'MAGNiFICA';
 }
+const seenKey=()=>'magnifica-seenat-'+myUid();
+function markSeen(){if(!myUid())return;try{localStorage.setItem(seenKey(),String(Date.now()))}catch(e){}}
 function trackNew(list){
  const fresh=list.filter(a=>!seenAppts.has(a.id));
  list.forEach(a=>seenAppts.add(a.id));
- if(!apptsInit){apptsInit=true;return}
- const add=fresh.filter(a=>!mineAppts.has(a.id)&&(+a.created||0)>Date.now()-12*3600*1000);
+ const first=!apptsInit;apptsInit=true;
+ const me=myUid();
+ if(me){
+  let sa=+lsGet(seenKey(),0);
+  if(!sa){markSeen();sa=Date.now()}
+  /* непрочитані = чужі записи, створені після останнього відкриття вкладки «Записи» (переживає оновлення сторінки) */
+  const un=list.filter(a=>a.by&&a.by!==me&&(+a.created||0)>sa&&isOk(a)).length;
+  if(state.tab==='records'&&!document.hidden){if(un)markSeen();state.newAppts=0}else state.newAppts=un;
+  drawBadge();
+ }
+ if(first)return;
+ const add=fresh.filter(a=>!mineAppts.has(a.id)&&a.by!==me&&(+a.created||0)>Date.now()-12*3600*1000);
  if(!add.length)return;
- if(state.tab!=='records'||document.hidden){state.newAppts+=add.length;drawBadge()}
  const a=add[add.length-1];
  toast('Новий запис: '+(a.name||'без імені')+' · '+full(a.d).slice(0,5)+' '+a.t+(a.mn?' · '+a.mn:''));
  try{if(navigator.vibrate)navigator.vibrate(120)}catch(e){}
 }
-{const o=Store.saveAppt;if(o)Store.saveAppt=function(id){mineAppts.add(id);return o.apply(Store,arguments)}}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab==='records'&&state.newAppts){state.newAppts=0;drawBadge()}});
+{const o=Store.saveAppt;if(o)Store.saveAppt=function(id,d){mineAppts.add(id);if(d&&typeof d==='object'&&!d.by&&myUid())d.by=myUid();return o.apply(Store,arguments)}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab==='records'){markSeen();if(state.newAppts){state.newAppts=0;drawBadge()}}});
 
 /* ---------- запуск ---------- */
 function setView(v){document.documentElement.setAttribute('data-view',v)}
