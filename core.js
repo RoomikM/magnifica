@@ -211,6 +211,25 @@ function profitHtml(D){
   <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>counted(a)&&inR(a.d)).length)}</b></div></div>
  </div>`;
 }
+/* статистика для блоків під банером прибутку: за весь час або за вибраний місяць */
+function overviewScope(D){
+ const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7);
+ if(r!=='month')return{S:D.summary,masters:D.masterRev,label:''};
+ const days=D.days.filter(x=>String(x.key).startsWith(mk));
+ const total=days.reduce((a,x)=>a+x.total,0),services={};
+ SV.forEach(sv=>{
+  const amount=days.reduce((a,x)=>a+(+x[sv.id]||0),0),count=days.reduce((a,x)=>a+(+(x.c||{})[sv.id]||0),0);
+  services[sv.id]={amount,count,share:total?amount/total*100:0};
+ });
+ let best=null;days.forEach(x=>{if(!best||x.total>best.total)best=x});
+ const mr=new Map();
+ state.appts.filter(a=>counted(a)&&String(a.d).startsWith(mk)).forEach(a=>{
+  const k=a.m||'—',o=mr.get(k)||{name:a.mn||personName(a.m)||'Без майстра',sum:0,n:0};o.sum+=(+a.total||0);o.n++;mr.set(k,o);
+ });
+ const [y,m]=mk.split('-').map(Number);
+ return{S:{total,active:days.length,avg:days.length?total/days.length:0,best,services,from:days.length?days[0].key:null,to:days.length?days[days.length-1].key:null},
+  masters:[...mr.values()].sort((a,b)=>b.sum-a.sum),label:MONTHS[m-1]+' '+y};
+}
 function workedHtml(D){
  if(!can('stats'))return '';
  const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7),[py,pm]=mk.split('-').map(Number);
@@ -228,7 +247,7 @@ function serviceCards(S){
   return `<div class="service">
   <div class="service-top"><span class="service-name">${esc(s.name)}</span><span class="dot" style="background:${colorOf(i)}"></span></div>
   <div class="service-amount">${money(x.amount)}</div>
-  <div class="service-meta"><span>${fmt(x.count)} записів</span><span>${x.share.toFixed(1)}%</span></div>
+  <div class="service-meta"><span>${x.count||x.amount<=0?fmt(x.count)+' записів':'—'}</span><span>${x.share.toFixed(1)}%</span></div>
   <div class="bar"><i style="width:${(x.amount/max*100).toFixed(1)}%;background:${colorOf(i)}"></i></div></div>`}).join('');
 }
 function mastersCard(D){
@@ -387,13 +406,14 @@ function renderAll(){
  if(can('stats')){
   put('profit',profitHtml(D));
   put('worked',workedHtml(D));
+  const O=overviewScope(D),OS=O.S;
   put('kpis',
-   kpi('Загальна сума',money(S.total),S.from?full(S.from)+' — '+full(S.to):'ще немає даних')+
-   kpi('Активні дні',fmt(S.active),'днів із записами')+
-   kpi('Середня сума / день',money(S.avg),'середнє по активних днях')+
-   kpi('Найкращий день',S.best?money(S.best.total):'—',S.best?S.best.label:''));
-  put('services',serviceCards(S));
-  put('mastersBox',mastersCard(D));
+   kpi(O.label?'Сума за місяць':'Загальна сума',money(OS.total),O.label?O.label:(OS.from?full(OS.from)+' — '+full(OS.to):'ще немає даних'))+
+   kpi('Активні дні',fmt(OS.active),'днів із записами')+
+   kpi('Середня сума / день',money(OS.avg),'середнє по активних днях')+
+   kpi('Найкращий день',OS.best?money(OS.best.total):'—',OS.best?OS.best.label:''));
+  put('services',serviceCards(OS));
+  put('mastersBox',mastersCard({masterRev:O.masters}));
   put('dailyChart',lineChart(D.days));
   put('serviceDonut',donut(S.services,S.total));
   put('monthlyChart',barChart(D.monthly));
