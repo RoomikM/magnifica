@@ -5,7 +5,16 @@ document.querySelectorAll('#nav button,#gear').forEach(b=>b.addEventListener('cl
 $('fab').addEventListener('click',()=>{const f=fabInfo();if(f)f[1]()});
 /* вікно закривається лише хрестиком або після «Зберегти»: випадковий тап повз картку чи Esc не губить введені дані */
 $('sheet').addEventListener('click',e=>{if(e.target.closest('[data-close]'))closeSheet()});
-$('profit').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(b){state.ui.range=b.dataset.range;renderAll()}});
+$('profit').addEventListener('click',e=>{
+ let b=e.target.closest('[data-range]');
+ if(b){state.ui.range=b.dataset.range;renderAll();return}
+ b=e.target.closest('[data-pm]');
+ if(b){
+  const n=+b.dataset.pm,[y,m]=(state.ui.pmonth||todayKey().slice(0,7)).split('-').map(Number);
+  if(!n)state.ui.pmonth=todayKey().slice(0,7);else{const dt=new Date(Date.UTC(y,m-1+n,1));state.ui.pmonth=dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1)}
+  renderAll();
+ }
+});
 
 /* логотип → головна */
 const goHome=()=>{const t=[...(isOwner()?[]:['cabinet']),'overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};

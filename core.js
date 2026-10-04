@@ -74,7 +74,7 @@ const put=(id,html)=>{const el=$(id);if(el)el.innerHTML=html};
 const state={
  days:new Map(),baseline:{},appts:[],wait:[],exps:[],sals:[],clients:[],staff:[],cfg:null,
  status:'loading',tab:'overview',user:null,role:'owner',perms:{},me:null,
- ui:{aview:lsGet('magnifica-aview','day'),adate:todayKey(),afilter:'future',aq:'',mf:'',range:'all',emonth:todayKey().slice(0,7),
+ ui:{aview:lsGet('magnifica-aview','day'),adate:todayKey(),afilter:'future',aq:'',mf:'',range:'all',pmonth:todayKey().slice(0,7),emonth:todayKey().slice(0,7),
   exsub:'exp',cq:'',csort:'name',cflt:'all'}
 };
 let SV=[],SVT=[];
@@ -195,19 +195,20 @@ function compute(){
 const kpi=(label,value,hint)=>`<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="hint">${hint}</div></div>`;
 function profitHtml(D){
  if(!hasFin())return '';
- const r=state.ui.range,mk=todayKey().slice(0,7);
+ const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7),[py,pm]=mk.split('-').map(Number);
  const inR=k=>r==='all'||String(k).startsWith(mk);
  const rev=D.days.filter(x=>inR(x.key)).reduce((a,x)=>a+x.total,0);
  const exp=outs().filter(x=>inR(x.d)).reduce((a,x)=>a+x.amount,0);
  const net=rev-exp,margin=rev?Math.round(net/rev*100):null;
- const fut=state.appts.filter(a=>isOk(a)&&!counted(a));
+ const fut=state.appts.filter(a=>isOk(a)&&!counted(a)&&inR(a.d));
  const futSum=fut.reduce((a,x)=>a+(+x.total||0),0);
  return `<div class="profit">
   <div class="profit-top"><span class="label">Чистий прибуток</span>
-   <div class="seg" role="group" aria-label="Період"><button data-range="all" aria-pressed="${r==='all'}">Весь час</button><button data-range="month" aria-pressed="${r==='month'}">Цей місяць</button></div></div>
+   <div class="seg" role="group" aria-label="Період"><button data-range="all" aria-pressed="${r==='all'}">Весь час</button><button data-range="month" aria-pressed="${r==='month'}">Місяць</button></div></div>
+  ${r==='month'?`<div class="navdate pnav"><button class="iconbtn" data-pm="-1" aria-label="Попередній місяць">‹</button><span class="lbl">${MONTHS[pm-1]} ${py}</span><button class="iconbtn" data-pm="1" aria-label="Наступний місяць">›</button>${mk!==todayKey().slice(0,7)?'<button class="btn sm" data-pm="0">Цей місяць</button>':''}</div>`:''}
   <div><div class="profit-main ${net<0?'neg':'pos'}">${net<0?'−':''}${money(Math.abs(net))}</div>
    ${margin==null?'':`<div class="sub">${margin<0?'−'+Math.abs(margin):margin}% від доходу${futSum?` · попереду записів на ${money(futSum)}`:''}</div>`}</div>
-  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>isOk(a)&&(r==='all'||a.d.startsWith(mk))).length)}</b></div></div>
+  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>isOk(a)&&inR(a.d)).length)}</b></div></div>
  </div>`;
 }
 function serviceCards(S){
