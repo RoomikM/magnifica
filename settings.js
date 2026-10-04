@@ -60,9 +60,10 @@ function renderSettings(force){
   <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button>`).join('');
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
-  <p class="set-p">Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
+  <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
   <div class="setrow hd"><span>Назва</span><span>Ціна, ₴</span><span></span></div>
-  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button></div>`).join('')}
+  ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><input class="grp" list="grplist" value="${esc(s.group||'')}" placeholder="Група на Огляді (необов’язково), напр. Манікюр" maxlength="40" aria-label="Група: ${esc(s.name)}"></div>`).join('')}
+  <datalist id="grplist">${[...new Set(sv.map(x=>String(x.group||'').trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
   <button class="btn sm" id="addSvc">+ Додати послугу</button></div>
  <div class="card"><h2 class="set-h">Категорії витрат</h2>
   <p class="set-p">Оренда, матеріали, податки… Зарплата ведеться окремо у вкладці «Витрати → Зарплата». Видалення категорії не стирає вже внесені витрати.</p>
@@ -110,11 +111,13 @@ const copyAccess=s=>copyText(accessText(s),s.pw?'Доступ скопійова
 
 /* відсотки майстра за видами робіт */
 function pctsHtml(st){
- const sv=svList().filter(x=>!x.archived);if(!sv.length)return '';
+ const gl=[],seen=new Set();
+ svList().filter(x=>!x.archived).forEach(x=>{const k=grpKeyOfSv(x);if(!seen.has(k)){seen.add(k);gl.push({k,name:x.group||x.name})}});
+ if(!gl.length)return '';
  const p=(st&&st.pcts)||{};
  return `<details class="pcts"${hasCustomPcts(st)?' open':''}><summary>% за видами робіт (необов’язково)</summary>
-  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться загальний %. Можна поставити 0.</div>
-  ${sv.map(x=>`<label class="pctrow"><span>${esc(x.name)}</span><input data-spct="${esc(x.id)}" inputmode="numeric" maxlength="3" placeholder="як загальний" value="${p[x.id]!=null&&p[x.id]!==''?esc(p[x.id]):''}"></label>`).join('')}</details>`;
+  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться загальний %. Можна поставити 0. Послуги однієї групи мають спільний %.</div>
+  ${gl.map(x=>`<label class="pctrow"><span>${esc(x.name)}</span><input data-spct="${esc(x.k)}" inputmode="numeric" maxlength="3" placeholder="як загальний" value="${p[x.k]!=null&&p[x.k]!==''?esc(p[x.k]):''}"></label>`).join('')}</details>`;
 }
 function readPcts(){
  const o={};
@@ -351,6 +354,7 @@ function initSettings(){
   if(row.dataset.sid){
    const s=c.services.find(x=>x.id===row.dataset.sid);if(!s)return;
    if(e.target.classList.contains('nm')){const v=e.target.value.trim();if(!v){e.target.value=s.name;return}s.name=v}
+   else if(e.target.classList.contains('grp')){s.group=e.target.value.trim()}
    else{s.price=numOf(e.target.value);e.target.value=s.price?String(s.price):''}
    saveCfg().then(()=>toast('Збережено'));
   }else if(row.dataset.cid){

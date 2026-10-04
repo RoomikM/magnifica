@@ -11,7 +11,7 @@ function cabinetData(){
  const rev=done.reduce((t,a)=>t+(+a.total||0),0);
  const pct=state.me&&+state.me.pct>0?+state.me.pct:0,rate=hasRates(state.me),custom=hasCustomPcts(state.me);
  const svc=new Map();
- done.forEach(a=>{const f=itemFactor(a);(a.items||[]).forEach(i=>{const k=i.name||'—',r=svc.get(k)||{name:k,n:0,sum:0};r.n++;r.sum+=(+i.price||0)*f;svc.set(k,r)})});
+ done.forEach(a=>{const f=itemFactor(a);(a.items||[]).forEach(i=>{const nm=svGrpName(i.sid,i.name)||'—',r=svc.get(nm)||{name:nm,n:0,sum:0};r.n++;r.sum+=(+i.price||0)*f;svc.set(nm,r)})});
  const cl=new Map();
  done.forEach(a=>{const k=a.cid||a.name||'—',r=cl.get(k)||{name:a.name||'Без імені',n:0,sum:0};r.n++;r.sum+=(+a.total||0);cl.set(k,r)});
  const wd=Array(7).fill(0);done.forEach(a=>{wd[new Date(a.d+'T12:00:00Z').getUTCDay()]++});

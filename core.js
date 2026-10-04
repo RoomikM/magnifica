@@ -115,7 +115,7 @@ function saveCfg(){
   .catch(e=>toast(errText(e)));
 }
 function svList(){
- const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0}));
+ const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,group:String(s.group||'').trim()}));
  const seen=new Set(list.map(s=>s.id));
  const add=(id,name)=>{if(!seen.has(id)){seen.add(id);list.push({id,name:name||LEGACY_NAMES[id]||id,price:0,archived:true})}};
  state.days.forEach(v=>Object.keys((v&&v.a)||{}).forEach(id=>add(id)));
@@ -123,6 +123,19 @@ function svList(){
  return list;
 }
 const svIndex=sid=>Math.max(0,SV.findIndex(s=>s.id===sid));
+/* групи послуг: «Манікюр» = комплекс, чистка, зняття лаку… Без групи послуга сама собі група */
+const grpKeyOfSv=s=>s?(s.group&&String(s.group).trim()?'g:'+String(s.group).trim().toLowerCase():s.id):'';
+const svGrpKey=sid=>grpKeyOfSv(cfgServices().find(x=>x.id===sid))||sid;
+const svGrpName=(sid,fallback)=>{const s=cfgServices().find(x=>x.id===sid);return s?((s.group&&String(s.group).trim())||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
+function svGroups(S,total){
+ const map=new Map();
+ SV.forEach(sv=>{
+  const x=S[sv.id]||{amount:0,count:0},k=grpKeyOfSv(sv);
+  let g=map.get(k);if(!g){g={key:k,name:sv.group||sv.name,amount:0,count:0,archived:true,first:sv.id};map.set(k,g)}
+  g.amount+=x.amount;g.count+=x.count;if(!sv.archived)g.archived=false;
+ });
+ return [...map.values()].filter(g=>!g.archived||g.amount>0).map(g=>({...g,share:total?g.amount/total*100:0}));
+}
 const catName=x=>{const c=cfgCats().find(c=>c.id===x.cat);return c?c.name:(x.catName||'Інше')};
 function personName(id,snap){
  const p=cfgPeople().find(x=>x.id===id)||state.staff.find(x=>x.id===id);
@@ -140,7 +153,7 @@ function syncPeople(list){
 /* знижка/абонемент: частка, на яку множаться ціни робіт, щоб суми послуг дорівнювали total */
 function itemFactor(a){const s=(a.items||[]).reduce((t,i)=>t+(+i.price||0),0);return s>0&&a.total!=null&&isFinite(+a.total)?(+a.total)/s:1}
 /* відсоток майстра: окремий для кожного виду робіт (pcts), інакше загальний (pct) */
-const pctFor=(st,sid)=>{if(!st)return 0;const p=st.pcts&&st.pcts[sid];return p!=null&&p!==''&&isFinite(+p)?Math.min(100,Math.max(0,+p)):(+st.pct>0?+st.pct:0)};
+const pctFor=(st,sid)=>{if(!st)return 0;const pc=st.pcts||{},p=pc[sid]!=null&&pc[sid]!==''?pc[sid]:pc[svGrpKey(sid)];return p!=null&&p!==''&&isFinite(+p)?Math.min(100,Math.max(0,+p)):(+st.pct>0?+st.pct:0)};
 const hasCustomPcts=st=>!!st&&!!st.pcts&&Object.values(st.pcts).some(v=>v!==''&&v!=null&&isFinite(+v));
 const hasRates=st=>!!st&&(+st.pct>0||hasCustomPcts(st));
 const earnOf=(st,list)=>Math.round(list.reduce((t,a)=>{const f=itemFactor(a);return t+(a.items||[]).reduce((x,i)=>x+(+i.price||0)*f*pctFor(st,i.sid)/100,0)},0));
@@ -273,14 +286,14 @@ function workedHtml(D){
  return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${W.old&&r!=='all'?'≈ ':''}${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}<span class="opt">${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}</span></div></div>`;
 }
 function serviceCards(S){
- const max=Math.max(1,...SV.map(s=>S.services[s.id].amount));
- return SV.filter(s=>!s.archived||S.services[s.id].amount>0).map(s=>{
-  const i=svIndex(s.id),x=S.services[s.id];
+ const gl=svGroups(S.services,S.total),max=Math.max(1,...gl.map(g=>g.amount));
+ return gl.map(g=>{
+  const c=colorOf(svIndex(g.first));
   return `<div class="service">
-  <div class="service-top"><span class="service-name">${esc(s.name)}</span><span class="dot" style="background:${colorOf(i)}"></span></div>
-  <div class="service-amount">${money(x.amount)}</div>
-  <div class="service-meta"><span>${x.count||x.amount<=0?fmt(x.count)+' записів':'—'}</span><span>${x.share.toFixed(1)}%</span></div>
-  <div class="bar"><i style="width:${(x.amount/max*100).toFixed(1)}%;background:${colorOf(i)}"></i></div></div>`}).join('');
+  <div class="service-top"><span class="service-name">${esc(g.name)}</span><span class="dot" style="background:${c}"></span></div>
+  <div class="service-amount">${money(g.amount)}</div>
+  <div class="service-meta"><span>${g.count||g.amount<=0?fmt(g.count)+' записів':'—'}</span><span>${g.share.toFixed(1)}%</span></div>
+  <div class="bar"><i style="width:${(g.amount/max*100).toFixed(1)}%;background:${c}"></i></div></div>`}).join('');
 }
 function mastersCard(D){
  const l=D.masterRev;if(!l.length||!l.some(m=>m.sum>0))return '';
@@ -315,11 +328,11 @@ function barChart(rows){
  return svg+'</svg>';
 }
 function donut(S,total){
- const items=SV.filter(s=>S[s.id].amount>0);
+ const items=svGroups(S,total).filter(g=>g.amount>0);
  if(!items.length)return '<div class="empty">Ще немає даних</div>';
  let acc=0;const stops=[];
- items.forEach(s=>{const p=S[s.id].share;stops.push(`${colorOf(svIndex(s.id))} ${acc}% ${acc+p}%`);acc+=p});
- const rows=items.map(s=>{const x=S[s.id],c=colorOf(svIndex(s.id));return `<div class="rank-row"><div class="rank-head"><span><span class="dot" style="width:7px;height:7px;background:${c};margin-right:5px"></span>${esc(s.name)}</span><b>${x.share.toFixed(1)}%</b></div><div class="rank-track"><i style="width:${x.share}%;background:${c}"></i></div></div>`}).join('');
+ items.forEach(g=>{const p=g.share;stops.push(`${colorOf(svIndex(g.first))} ${acc}% ${acc+p}%`);acc+=p});
+ const rows=items.map(s=>{const x=s,c=colorOf(svIndex(s.first));return `<div class="rank-row"><div class="rank-head"><span><span class="dot" style="width:7px;height:7px;background:${c};margin-right:5px"></span>${esc(s.name)}</span><b>${x.share.toFixed(1)}%</b></div><div class="rank-track"><i style="width:${x.share}%;background:${c}"></i></div></div>`}).join('');
  return `<div class="donut-wrap"><div class="donut" style="background:conic-gradient(${stops.join(',')})"><div class="donut-center"><b>${money(total)}</b><span>загалом</span></div></div><div class="rank">${rows}</div></div>`;
 }
 
