@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MAGNiFICA">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#10131f">
+<meta name="theme-color" content="#12171d">
 <meta name="format-detection" content="telephone=no">
 <title>MAGNiFICA</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -71,6 +71,7 @@
     <nav class="nav" id="nav" aria-label="Розділи">
       <button data-tab="overview" aria-pressed="true">Огляд</button>
       <button data-tab="records" aria-pressed="false">Записи</button>
+      <button data-tab="clients" aria-pressed="false">Клієнти</button>
       <button data-tab="expenses" aria-pressed="false">Витрати</button>
       <button data-tab="monthly" aria-pressed="false">Місячна</button>
       <button data-tab="weekly" aria-pressed="false">Тижнева</button>
@@ -88,6 +89,7 @@
       <div id="profit"></div>
       <div class="kpis" id="kpis"></div>
       <div class="service-grid" id="services"></div>
+      <div id="mastersBox"></div>
       <div class="grid">
         <div class="card"><h2>Динаміка за днями</h2><div class="caption">Загальна сума по кожному активному дню</div><div class="chart" id="dailyChart"></div></div>
         <div class="card"><h2>Структура послуг</h2><div class="caption">Частка кожного виду обслуговування в сумі</div><div id="serviceDonut"></div></div>
@@ -96,6 +98,7 @@
     </section>
 
     <section id="records" class="section"></section>
+    <section id="clients" class="section"></section>
     <section id="expenses" class="section"></section>
 
     <section id="monthly" class="section">
@@ -123,10 +126,14 @@
   <div class="sheet-panel" id="sheetPanel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1"></div>
 </div>
 <input type="file" id="impFile" accept=".json,application/json" hidden>
-<datalist id="clientsList"></datalist>
 
 <script src="firebase-config.js"></script>
 <script src="store.js"></script>
-<script src="app.js"></script>
+<script src="core.js"></script>
+<script src="records.js"></script>
+<script src="clients.js"></script>
+<script src="money.js"></script>
+<script src="settings.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
