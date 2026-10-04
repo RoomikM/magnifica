@@ -316,7 +316,7 @@ function setSkin(s){
  if(!SKIN_META[s])s='night';
  document.documentElement.setAttribute('data-skin',s);lsSet('magnifica-skin',s);
  const mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',SKIN_META[s]);
- document.querySelectorAll('.skin-btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.skin===s)));
+ document.querySelectorAll('.skin-btn,.skin-dot').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.skin===s)));
 }
 const effMode=()=>{const p=lsGet('magnifica-mode','auto');return p==='auto'?(innerWidth>=900?'desktop':'phone'):p};
 const isMobile=()=>document.documentElement.dataset.mode==='phone';

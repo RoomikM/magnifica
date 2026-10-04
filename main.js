@@ -134,6 +134,7 @@ function resetData(){
  state.days=new Map();state.baseline={};state.appts=[];state.wait=[];state.exps=[];state.sals=[];state.clients=[];state.staff=[];state.cfg=null;
  state.newAppts=0;seenAppts.clear();apptsInit=false;drawBadge();state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
 }
+document.getElementById('skinBar').addEventListener('click',e=>{const b=e.target.closest('.skin-dot');if(b)setSkin(b.dataset.skin)});
 setSkin(document.documentElement.getAttribute('data-skin')||'night');
 setNavH();addEventListener('resize',()=>{applyMode();setNavH()});
 setTab('overview');
