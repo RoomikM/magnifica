@@ -35,7 +35,7 @@ function evHtml(a,compact,pos){
  const sub=(mName(a)?mName(a)+' · ':'')+itemsText(a);
  return `<button class="ev ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="${pos||''}--ec:${firstColor(a)}"><b>${esc(a.t)}</b>${compact?'':'<span class="p">'+money(a.total||0)+'</span>'}<span class="n">${esc(nm)}${STATUS_TXT[a.st]&&!compact?' · '+STATUS_TXT[a.st]:''}</span><span class="s">${esc(sub)}</span></button>`;
 }
-function tlCol(d,list,sh,eh,hpx,compact){
+function tlCol(d,list,sh,eh,hpx,compact,mid){
  let lines='';for(let x=0;x<=eh-sh;x++)lines+=`<i class="tl-line" style="top:${x*hpx}px"></i>`;
  const evs=lanes(list).map(c=>{
   const top=(c.s-sh*60)/60*hpx,h=Math.max(30,(c.e-c.s)/60*hpx-2);
@@ -43,7 +43,20 @@ function tlCol(d,list,sh,eh,hpx,compact){
  }).join('');
  let now='';
  if(d===todayKey()){const m=nowMin();if(m>=sh*60&&m<=eh*60)now=`<i class="tl-now" style="top:${(m-sh*60)/60*hpx}px"></i>`}
- return `<div class="tl-col" data-date="${d}" data-sh="${sh}" data-hpx="${hpx}" style="height:${(eh-sh)*hpx}px">${lines}${evs}${now}</div>`;
+ return `<div class="tl-col" data-date="${d}" ${mid!=null?`data-m="${esc(mid)}"`:''} data-sh="${sh}" data-hpx="${hpx}" style="height:${(eh-sh)*hpx}px">${lines}${evs}${now}</div>`;
+}
+/* день по майстрах: колонка на кожного, у шапці кількість записів і сума */
+const masterCols=l=>{
+ const ms=masters();
+ if(ms.length<2||state.ui.mf||!(isOwner()||state.perms.apptView))return null;
+ const cols=ms.map(m=>({id:m.id,name:m.name,list:l.filter(a=>a.m===m.id)}));
+ const free=l.filter(a=>!ms.some(m=>m.id===a.m));
+ if(free.length)cols.push({id:'',name:'Без майстра',list:free});
+ return cols;
+};
+function masterDay(date,cols,sh,eh,hpx){
+ const head=c=>`<div class="mc-h"><i class="av">${esc(initials(c.name))}</i><b>${esc(c.name)}</b><span><em>${activeN(c.list)}</em> зап.${activeSum(c.list)?' · '+money(activeSum(c.list)):''}</span></div>`;
+ return `<div class="mc"><div class="mc-in"><div class="mc-g"><div class="mc-gh"></div>${gutter(sh,eh,hpx)}</div>${cols.map(c=>`<div class="mc-c">${head(c)}${tlCol(date,c.list,sh,eh,hpx,true,c.id)}</div>`).join('')}</div></div>`;
 }
 function agenda(list,empty){
  if(!list.length)return `<div class="empty">${empty}</div>`;
@@ -85,9 +98,9 @@ function recBody(){
  if(!canView())return '<div class="card"><div class="empty">У вас є право лише додавати записи. Перегляд списку вимкнено адміністратором.</div></div>';
  const u=state.ui,v=u.aview,hpx=isMobile()?64:72;
  if(v==='day'){
-  const l=apptsOn(u.adate),[sh,eh]=trange([l]);
+  const l=apptsOn(u.adate),[sh,eh]=trange([l]),mc=masterCols(l);
   return `<div class="card"><div class="sumline"><span>Записів: <b>${activeN(l)}</b></span><span>Сума: <b>${money(activeSum(l))}</b></span>${l.length?'':'<span>Вільний день'+(can('apptAdd')?' — торкніться години, щоб записати клієнта':'')+'</span>'}</div>
-   <div class="tl">${gutter(sh,eh,hpx)}${tlCol(u.adate,l,sh,eh,hpx,false)}</div></div>`;
+   ${mc?masterDay(u.adate,mc,sh,eh,hpx):`<div class="tl">${gutter(sh,eh,hpx)}${tlCol(u.adate,l,sh,eh,hpx,false)}</div>`}</div>`;
  }
  if(v==='week'){
   const m=keyOf(mondayOf(u.adate)),days=[0,1,2,3,4,5,6].map(i=>addDays(m,i)),lists=days.map(apptsOn),all=[].concat(...lists);

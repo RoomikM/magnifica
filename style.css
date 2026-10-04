@@ -568,3 +568,14 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 .kick-row{display:flex;justify-content:center;margin:6px 0 20px}
 .kick-row .btn{opacity:.85}
 html.nophone .ph-f{display:none!important}
+
+.mc{overflow-x:auto;margin:0 -2px;-webkit-overflow-scrolling:touch}
+.mc-in{display:flex;min-width:100%}
+.mc-g{flex:0 0 42px;position:sticky;left:0;z-index:3;background:var(--card-solid)}
+.mc-gh{height:68px}
+.mc-c{flex:1 0 150px;min-width:150px}
+html[data-mode="desktop"] .mc-c{flex-basis:190px;min-width:190px}
+.mc-h{height:68px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.25;border-left:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center;font-size:11px;color:var(--muted);padding:3px 4px;min-width:0}
+.mc-h .av{width:24px;height:24px;font-size:10px}
+.mc-h b{font-size:12px;color:var(--text);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-h em{font-style:normal;color:var(--text);font-weight:800}

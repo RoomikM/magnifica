@@ -46,7 +46,7 @@ $('records').addEventListener('click',e=>{
  if(col&&can('apptAdd')){
   const r=col.getBoundingClientRect(),hpx=+col.dataset.hpx,sh=+col.dataset.sh;
   const m=Math.min(23*60+30,sh*60+Math.round((e.clientY-r.top)/hpx*2)*30);
-  openAppt({d:col.dataset.date,t:hhmm(Math.max(0,m))});
+  openAppt({d:col.dataset.date,t:hhmm(Math.max(0,m)),...(col.dataset.m!=null?{m:col.dataset.m}:{})});
  }
 });
 $('records').addEventListener('input',e=>{if(e.target.id==='aq'){state.ui.aq=e.target.value;put('recBody',recBody())}});
