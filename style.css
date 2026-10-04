@@ -560,8 +560,8 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 .grp-hint{grid-column:1/-1;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px;border:1px dashed var(--line);border-radius:14px;font-size:13px;color:var(--muted)}
 .setrow input.grpx{grid-column:1/-1;font-size:13px;padding:6px 10px;color:var(--muted)}
 
-.set-tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:2px 0 4px;scrollbar-width:none}
+.set-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:2px 0 4px}
 .set-tabs::-webkit-scrollbar{display:none}
-.set-tabs button{flex:0 0 auto;font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;white-space:nowrap}
+.set-tabs button{flex:0 0 auto;font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;white-space:nowrap}
 .set-tabs button[aria-selected="true"]{background:var(--text);color:var(--card-solid);border-color:var(--text)}
 .set-grid>[hidden]{display:none!important}
