@@ -99,7 +99,7 @@ function recBody(){
  const u=state.ui,v=u.aview,hpx=isMobile()?64:72;
  if(v==='day'){
   const l=apptsOn(u.adate),[sh,eh]=trange([l]),mc=masterCols(l);
-  return `<div class="card"><div class="sumline"><span>Записів: <b>${activeN(l)}</b></span><span>Сума: <b>${money(activeSum(l))}</b></span>${l.length?'':'<span>Вільний день'+(can('apptAdd')?' — торкніться години, щоб записати клієнта':'')+'</span>'}</div>
+  return `<div class="card">${mc?'':`<div class="sumline"><span>Записів: <b>${activeN(l)}</b></span><span>Сума: <b>${money(activeSum(l))}</b></span></div>`}
    ${mc?masterDay(u.adate,mc,sh,eh,hpx):`<div class="tl">${gutter(sh,eh,hpx)}${tlCol(u.adate,l,sh,eh,hpx,false)}</div>`}</div>`;
  }
  if(v==='week'){
