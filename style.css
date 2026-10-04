@@ -501,3 +501,8 @@ details summary{cursor:pointer;font-weight:800;font-size:13px}
 .skin-dot.coffee:before{background:linear-gradient(135deg,#d8c6b2,#8b5e3c)}
 .skin-dot.ivory:before{background:linear-gradient(135deg,#f1ece0,#aa9a70)}
 .skin-dot.night:before{background:linear-gradient(135deg,#12171d,#7f9db6)}
+
+/* інструкція для айфона */
+.ios-steps{margin:8px 0 12px;padding-left:22px;display:grid;gap:10px;font-size:14px;line-height:1.45}
+.ios-ic{width:18px;height:18px;vertical-align:-4px;color:var(--accent)}
+.note.warn{border-color:#c0392b}

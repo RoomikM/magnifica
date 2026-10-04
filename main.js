@@ -92,7 +92,7 @@ $('loginForm').addEventListener('submit',async e=>{
 });
 {const bc=$('brandHome').cloneNode(true);bc.removeAttribute('id');bc.removeAttribute('role');bc.removeAttribute('tabindex');bc.style.cursor='default';$('loginBrand').appendChild(bc)}
 $('installLogin').addEventListener('click',doInstall);drawInstall();
-$('installHint').hidden=!(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!navigator.standalone);
+$('installHint').hidden=true;
 
 /* ---------- маячок про нові записи ---------- */
 const seenAppts=new Set(),mineAppts=new Set();let apptsInit=false;

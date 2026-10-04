@@ -228,9 +228,24 @@ function drawInstall(){
 }
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;drawInstall()});
 addEventListener('appinstalled',()=>{deferredInstall=null;drawInstall();toast('Застосунок встановлено')});
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function iosGuide(){
+ const ua=navigator.userAgent,webview=!/safari/i.test(ua)||/FBAN|FBAV|Instagram|Telegram|Viber|Line\/|TikTok|GSA\//i.test(ua),other=/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
+ const shareIc='<svg class="ios-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Додати на екран айфона</h2>${closeBtn}</div>
+  ${webview?'<div class="note warn">Ви відкрили сайт усередині іншого застосунку (Telegram, Instagram, Viber…). Там ярлик створити не можна. Скопіюйте посилання й відкрийте його в <b>Safari</b>.<div style="margin-top:8px"><button class="btn sm" id="ios-copy" type="button">Скопіювати посилання</button></div></div>':''}
+  <ol class="ios-steps">
+   <li>Відкрийте сайт у <b>Safari</b>${other?' (у Chrome теж працює, якщо iOS 16.4 і новіша)':''}.</li>
+   <li>Натисніть кнопку <b>«Поділитися»</b> ${shareIc} (квадрат зі стрілкою вгору): на айфоні внизу посередині, на айпаді вгорі.</li>
+   <li>Прокрутіть меню вниз і оберіть <b>«На початковий екран»</b>. Якщо такого пункту не видно, натисніть «Ще» або «Редагувати дії».</li>
+   <li>Натисніть <b>«Додати»</b> справа вгорі. Ярлик MAGNiFICA зʼявиться на головному екрані.</li>
+  </ol>
+  <div class="hint">iOS не дозволяє встановити застосунок однією кнопкою, тому це робиться вручну через меню «Поділитися».</div>`);
+ const c=$('ios-copy');if(c)c.addEventListener('click',()=>copyText(location.href.split('#')[0],'Посилання скопійовано. Вставте його в Safari'));
+}
 async function doInstall(){
  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;return}
- const ua=navigator.userAgent;
- toast(/iphone|ipad|ipod/i.test(ua)?'Safari: «Поділитися» → «На початковий екран»':'У меню браузера (⋮) оберіть «Встановити застосунок» або «Додати на головний екран»');
+ if(isIOS()){iosGuide();return}
+ toast('У меню браузера (⋮) оберіть «Встановити застосунок» або «Додати на головний екран»');
 }
 const installBlockHtml=()=>`<div class="lbl2" style="margin-top:14px">Застосунок</div><button class="btn sm" id="installBtn" ${isStandalone()?'hidden':''}>Встановити застосунок</button><div class="hint" id="installNote" style="margin:6px 0 0">${isStandalone()?'Застосунок уже встановлено.':''}</div>`;
