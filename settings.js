@@ -79,10 +79,6 @@ function renderSettings(force){
  <div class="card"><h2 class="set-h">Дані</h2>
   <p class="set-p">Копія зберігає все: дні, записи, клієнтів, витрати, виплати, послуги. Корисно робити раз на місяць.</p>
   <div class="btnrow"><button class="btn sm" id="exJson">Копія (JSON)</button><button class="btn sm" id="exCsv">Таблиця (CSV)</button><button class="btn sm" id="imBtn">Імпорт з файлу</button><button class="btn sm" id="manDay">Внести день сумою</button></div></div>
- <div class="card" style="grid-column:1/-1"><h2 class="set-h">Правила бази для працівників</h2>
-  <p class="set-p">Щоб права працівників діяли на рівні бази (а не лише на сайті), один раз вставте ці правила: Firebase → Firestore Database → Rules → замініть увесь текст → Publish. Замість <b>UID_ДРУГОГО_ВЛАСНИКА</b> вставте UID Оксани з Authentication → Users (без пробілів). Ваш UID уже підставлено.</p>
-  <textarea class="rules" id="rulesBox" readonly rows="8">${esc(rulesText())}</textarea>
-  <div class="btnrow" style="margin-top:8px"><button class="btn sm" id="copyRules">Копіювати правила</button></div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
   <button class="btn sm" id="logout">Вийти</button><div class="ver">MAGNiFICA · v3</div></div>
@@ -107,7 +103,7 @@ function openStaff(id){
   :`<label class="chk"><input type="checkbox" id="st-login"> Дати доступ до сайту</label>
    <div id="st-lbox" hidden><label class="lf"><span>Пошта</span><input id="st-email" type="email" inputmode="email" autocapitalize="off" autocomplete="off"></label>
    <label class="lf"><span>Пароль (мінімум 6 символів)</span><input id="st-pass" type="text" autocomplete="off" autocapitalize="off"></label>
-   <div class="hint" style="margin:-4px 0 8px">Передайте працівнику пошту й пароль. Правила бази потрібно оновити один раз (блок нижче в налаштуваннях).</div></div>`}
+   <div class="hint" style="margin:-4px 0 8px">Передайте працівнику пошту й пароль.</div></div>`}
   <div id="st-pbox" ${hasLogin||false?'':'hidden'}>
    <div class="lbl2" style="margin-top:12px">Права доступу</div>
    <div class="btnrow" style="margin-bottom:8px">${Object.entries(PERM_PRESETS).map(([k,v])=>`<button class="btn sm" type="button" data-preset="${k}">${v.label}</button>`).join('')}</div>
@@ -282,11 +278,6 @@ function initSettings(){
   if(t.closest('#exCsv')){exportCsv();return}
   if(t.closest('#imBtn')){$('impFile').click();return}
   if(t.closest('#manDay')){openDay();return}
-  if(t.closest('#copyRules')){
-   const box=$('rulesBox');box.select();
-   (navigator.clipboard?navigator.clipboard.writeText(box.value):Promise.reject()).then(()=>toast('Правила скопійовано')).catch(()=>{try{document.execCommand('copy');toast('Правила скопійовано')}catch(x){toast('Виділіть текст і скопіюйте вручну')}});
-   return;
-  }
   if(t.closest('#logout')){Store.signOut();return}
  });
  $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)});
