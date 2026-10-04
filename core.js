@@ -469,7 +469,6 @@ function renderAll(){
   put('services',serviceCards(OS));
   put('kickBox',isOwner()?'<div class="kick-row"><button class="btn sm" type="button" id="kickAll2">Вийти із всіх ПК</button></div>':'');
   put('mastersBox',mastersCard({masterRev:O.masters}));
-  put('dailyChart',lineChart(D.days));
   put('serviceDonut',donut(S.services,S.total));
   put('monthlyChart',barChart(D.monthly));
   put('weeklyChart',barChart(D.weekly));
