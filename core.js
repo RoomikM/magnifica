@@ -193,6 +193,34 @@ function compute(){
 
 /* ---------- огляд ---------- */
 const kpi=(label,value,hint)=>`<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="hint">${hint}</div></div>`;
+/* Старі дані (до записів) мають суми по днях, а кількість послуг лише загальну (baseline).
+   Розподіляємо baseline по місяцях пропорційно сумам: лише для показу, дані в базі не змінюються. */
+let _lc=null;
+function legacyCounts(){
+ if(_lc&&_lc.d===state.days&&_lc.b===state.baseline)return _lc.v;
+ const per={},out=new Map();
+ state.days.forEach((v,k)=>{
+  const m=String(k).slice(0,7),c=(v&&v.c)||{};
+  Object.entries((v&&v.a)||{}).forEach(([sid,x])=>{if(!(+c[sid]>0)&&+x>0){(per[sid]=per[sid]||{})[m]=(per[sid][m]||0)+(+x)}});
+ });
+ Object.entries(per).forEach(([sid,months])=>{
+  const base=Math.round(+state.baseline[sid]||0),tot=Object.values(months).reduce((a,b)=>a+b,0);
+  if(base<=0||!(tot>0))return;
+  const rows=Object.entries(months).map(([m,a])=>{const raw=a/tot*base;return{m,n:Math.floor(raw),f:raw-Math.floor(raw)}});
+  let left=base-rows.reduce((a,r)=>a+r.n,0);
+  rows.slice().sort((a,b)=>b.f-a.f).forEach(r=>{if(left>0){r.n++;left--}});
+  rows.forEach(r=>{const o=out.get(r.m)||{};o[sid]=r.n;out.set(r.m,o)});
+ });
+ _lc={d:state.days,b:state.baseline,v:out};return out;
+}
+const legacyMonth=mk=>legacyCounts().get(mk)||{};
+/* скільки відпрацьовано: записи + старі дані (за послугами) */
+function workedCount(r,mk){
+ const inR=k=>r==='all'||String(k).startsWith(mk);
+ const appts=state.appts.filter(a=>counted(a)&&inR(a.d)).length;
+ const old=r==='all'?Object.values(state.baseline||{}).reduce((t,v)=>t+(+v||0),0):Object.values(legacyMonth(mk)).reduce((t,v)=>t+v,0);
+ return{n:appts+Math.round(old),old:Math.round(old)};
+}
 function profitHtml(D){
  if(!hasFin())return '';
  const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7),[py,pm]=mk.split('-').map(Number);
@@ -208,7 +236,7 @@ function profitHtml(D){
   ${r==='month'?`<div class="navdate pnav"><button class="iconbtn" data-pm="-1" aria-label="Попередній місяць">‹</button><span class="lbl">${MONTHS[pm-1]} ${py}</span><button class="iconbtn" data-pm="1" aria-label="Наступний місяць">›</button>${mk!==todayKey().slice(0,7)?'<button class="btn sm" data-pm="0">Цей місяць</button>':''}</div>`:''}
   <div><div class="profit-main ${net<0?'neg':'pos'}">${net<0?'−':''}${money(Math.abs(net))}</div>
    ${margin==null?'':`<div class="sub">${margin<0?'−'+Math.abs(margin):margin}% від доходу${futSum?` · попереду записів на ${money(futSum)}`:''}</div>`}</div>
-  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(state.appts.filter(a=>counted(a)&&inR(a.d)).length)}</b></div></div>
+  <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(workedCount(r,mk).n)}</b></div></div>
  </div>`;
 }
 /* статистика для блоків під банером прибутку: за весь час або за вибраний місяць */
@@ -218,7 +246,7 @@ function overviewScope(D){
  const days=D.days.filter(x=>String(x.key).startsWith(mk));
  const total=days.reduce((a,x)=>a+x.total,0),services={};
  SV.forEach(sv=>{
-  const amount=days.reduce((a,x)=>a+(+x[sv.id]||0),0),count=days.reduce((a,x)=>a+(+(x.c||{})[sv.id]||0),0);
+  const amount=days.reduce((a,x)=>a+(+x[sv.id]||0),0),count=days.reduce((a,x)=>a+(+(x.c||{})[sv.id]||0),0)+(+legacyMonth(mk)[sv.id]||0);
   services[sv.id]={amount,count,share:total?amount/total*100:0};
  });
  let best=null;days.forEach(x=>{if(!best||x.total>best.total)best=x});
@@ -234,11 +262,10 @@ function workedHtml(D){
  if(!can('stats'))return '';
  const r=state.ui.range,mk=state.ui.pmonth||todayKey().slice(0,7),[py,pm]=mk.split('-').map(Number);
  const inR=k=>r==='all'||String(k).startsWith(mk);
- const list=state.appts.filter(a=>inR(a.d));
- const done=list.filter(counted).length;
- const works=r==='all'?SV.reduce((t,x)=>t+(+(D.summary.services[x.id]||{}).count||0),0):D.days.filter(x=>inR(x.key)).reduce((t,x)=>t+Object.values(x.c||{}).reduce((a,v)=>a+(+v||0),0),0);
+ const list=state.appts.filter(a=>inR(a.d)),W=workedCount(r,mk),done=W.n;
+ const works=r==='all'?SV.reduce((t,x)=>t+(+(D.summary.services[x.id]||{}).count||0),0):D.days.filter(x=>inR(x.key)).reduce((t,x)=>t+Object.values(x.c||{}).reduce((a,v)=>a+(+v||0),0),0)+W.old;
  const up=list.filter(a=>isOk(a)&&!counted(a)).length,miss=list.filter(a=>!isOk(a)).length;
- return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}</div></div>`;
+ return `<div class="card worked"><div class="worked-h"><span>Відпрацьовано записів</span><b>${W.old&&r!=='all'?'≈ ':''}${fmt(done)}</b></div><div class="worked-s">${r==='all'?'за весь час':MONTHS[pm-1]+' '+py}${works?' · послуг: <b>'+fmt(works)+'</b>':''}${up?' · попереду: <b>'+fmt(up)+'</b>':''}${miss?' · скасовано й пропущено: <b>'+fmt(miss)+'</b>':''}${W.old?'<br>Старі дані (до записів) рахуються за послугами'+(r==='all'?'.':', по місяцях приблизно.'):''}</div></div>`;
 }
 function serviceCards(S){
  const max=Math.max(1,...SV.map(s=>S.services[s.id].amount));
