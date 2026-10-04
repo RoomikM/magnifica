@@ -62,7 +62,7 @@ function renderSettings(force){
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
   <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Час (хв) підставляється в запис і його можна змінити. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
-  <div class="setrow hd"><span>Назва / група</span><span>Ціна, ₴</span><span></span></div>
+  <div class="setrow hd"><span><i class="mb">Назва / група</i><i class="dk">Назва</i></span><span class="dk">Група</span><span class="dk">Час, хв</span><span>Ціна, ₴</span><span></span></div>
   ${sv.map(s=>`<div class="setrow" data-sid="${esc(s.id)}"><input class="nm" value="${esc(s.name)}" aria-label="Назва послуги" maxlength="40"><input class="pr" value="${s.price?s.price:''}" placeholder="0" inputmode="numeric" aria-label="Ціна: ${esc(s.name)}"><button class="rm" data-rm-svc="${esc(s.id)}" aria-label="Видалити послугу">✕</button><select class="grp" aria-label="Група: ${esc(s.name)}"><option value="">— без групи —</option>${grpOpts(s)}</select><input class="du" value="${s.dur?s.dur:''}" placeholder="хв" inputmode="numeric" aria-label="Тривалість, хв: ${esc(s.name)}"></div>`).join('')}
   <button class="btn sm" id="addSvc">+ Додати послугу</button>
   <div class="lbl2" style="margin-top:14px">Групи послуг</div>
@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4h</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4i</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
