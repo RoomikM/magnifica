@@ -244,7 +244,8 @@ function workedCount(r,mk){
  const inR=k=>r==='all'||String(k).startsWith(mk);
  const appts=state.appts.filter(a=>counted(a)&&inR(a.d)).length;
  const old=r==='all'?Object.values(state.baseline||{}).reduce((t,v)=>t+(+v||0),0):Object.values(legacyMonth(mk)).reduce((t,v)=>t+v,0);
- return{n:appts+Math.round(old),old:Math.round(old)};
+ let dc=0;state.days.forEach((v,k)=>{if(inR(k)&&v&&v.c)Object.values(v.c).forEach(x=>{dc+=+x||0})});
+ return{n:appts+Math.round(old)+dc,old:Math.round(old)};
 }
 function profitHtml(D){
  if(!hasFin())return '';
