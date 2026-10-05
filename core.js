@@ -165,12 +165,12 @@ const hasCustomPcts=st=>!!st&&!!st.pcts&&Object.values(st.pcts).some(v=>v!==''&&
 const hasRates=st=>!!st&&(+st.pct>0||hasCustomPcts(st));
 const earnOf=(st,list)=>Math.round(list.reduce((t,a)=>{const f=itemFactor(a);return t+(a.items||[]).reduce((x,i)=>x+(+i.price||0)*f*pctFor(st,i.sid)/100,0)},0));
 /* баланс зарплати майстра: нараховано з записів мінус усі виплати; залишок переходить на наступні дні */
-function balOf(st){
+function balOf(st,upto,skipId){
  if(!st||!hasRates(st))return null;
  const id=st.id,from=isDate(st.balFrom)?st.balFrom:'';
- const done=state.appts.filter(a=>a.m===id&&counted(a)&&(!from||a.d>=from));
+ const done=state.appts.filter(a=>a.m===id&&counted(a)&&(!from||a.d>=from)&&(!upto||a.d<upto));
  const earned=earnOf(st,done);
- const paid=state.sals.filter(x=>x.sid===id&&(!from||x.d>=from)).reduce((t,x)=>t+(+x.amount||0),0);
+ const paid=state.sals.filter(x=>x.sid===id&&x.id!==skipId&&(!from||x.d>=from)&&(!upto||x.d<=upto)).reduce((t,x)=>t+(+x.amount||0),0);
  return{earned,paid,left:earned-paid,from,done};
 }
 const isOk=a=>a.st!=='cancel'&&a.st!=='noshow';
@@ -456,12 +456,38 @@ function statusCard(){
  if(s==='error')return'<h2>Не вдалося прочитати дані</h2><p>Перевірте зв’язок і оновіть сторінку.'+(state.errMsg?' <small>('+esc(state.errMsg)+')</small>':'')+'</p>';
  return'';
 }
+/* авто-виплата % майстрам: при відкритті сайту власником створюється виплата за розкладом (один раз, id детермінований) */
+const autoBusy=new Set();
+function schedDate(ap,t){
+ if(ap.freq==='day')return t;
+ if(ap.freq==='week'){const dow=utc(t).getUTCDay(),back=(dow-(+ap.dow%7)+7)%7;return addDays(t,-back)}
+ if(ap.freq==='month'){
+  const mk=(k)=>{const[y,m]=k.slice(0,7).split('-').map(Number),last=new Date(Date.UTC(y,m,0)).getUTCDate();return k.slice(0,7)+'-'+pad(Math.min(Math.max(1,+ap.dom||1),last))};
+  let d=mk(t);if(d>t)d=mk(addMonths(t.slice(0,7)+'-01',-1)+'');return d;
+ }
+ return '';
+}
+function runAutoPay(){
+ if(!isOwner()||state.status!=='ready'||!state.salsOk||!state.apptsLoaded||!can('salaryEdit'))return;
+ const t=todayKey();
+ state.staff.forEach(st=>{
+  const ap=st.autoPay;if(!ap||!ap.freq||st.active===false||!hasRates(st))return;
+  const D=schedDate(ap,t);if(!D||D>t||(isDate(ap.since)&&D<ap.since))return;
+  const id='auto_'+st.id+'_'+D;
+  if(autoBusy.has(id)||state.sals.some(x=>x.id===id))return;
+  if(state.sals.some(x=>x.sid===st.id&&x.auto&&x.d>=D))return;
+  const b=balOf(st,D,id);if(!b||b.left<=0)return;
+  autoBusy.add(id);
+  Store.saveSalary(id,{id,d:D,sid:st.id,sn:st.name,amount:b.left,to:addDays(D,-1),note:'Авто-виплата',auto:true,created:Date.now()})
+   .then(()=>toast('Авто-виплата: '+st.name+' — '+money(b.left))).catch(()=>autoBusy.delete(id));
+ });
+}
 function renderAll(){
  const ready=state.status==='ready';
  $('shell').classList.toggle('noshow',!ready);
  put('status',statusCard());
  if(!ready){$('period').textContent='—';updateFab();return}
- updateNav();
+ updateNav();runAutoPay();
  document.documentElement.classList.toggle('nophone',phoneRestricted());
  SV=svList();
  const D=compute(),S=D.summary;

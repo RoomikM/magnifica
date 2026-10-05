@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4p</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4q</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -241,7 +241,7 @@ function openStaff(id){
  if(ex&&ex.owner){openSelf(ex);return}
  const s=ex?JSON.parse(JSON.stringify(ex)):{id:'',name:'',role:'',master:true,active:true,perms:{...Object.fromEntries(PERM_PRESETS.master.perms.map(k=>[k,true]))},pay:null,created:Date.now()};
  if(!s.perms)s.perms={};
- const pay=s.pay||{freq:'',amount:0,start:todayKey()};
+ const pay=s.pay||{freq:'',amount:0,start:todayKey()},ap=s.autoPay||{};
  const hasLogin=!!(ex&&ex.uid);
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Працівник':'Новий працівник'}</h2>${closeBtn}</div>
   <label class="lf"><span>Ім’я</span><input id="st-name" value="${esc(s.name)}" maxlength="60" autocomplete="off"></label>
@@ -268,11 +268,17 @@ function openStaff(id){
    <label class="lf"><span>Рахувати з</span><input id="st-start" type="date" value="${esc(pay.start||todayKey())}"></label></div>
   <label class="lf"><span>Загальний % від виручки майстра</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
   ${pctsHtml(s)}
+  <div class="lbl2" style="margin-top:12px">Авто-виплата % (залишок за балансом)</div>
+  <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf"><span>Як часто</span><select id="st-af"><option value="">вимкнено</option><option value="day" ${ap.freq==='day'?'selected':''}>щодня</option><option value="week" ${ap.freq==='week'?'selected':''}>щотижня</option><option value="month" ${ap.freq==='month'?'selected':''}>раз на місяць</option></select></label>
+   <label class="lf" id="st-aw" hidden><span>День тижня</span><select id="st-adow">${['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map((n,i)=>`<option value="${i+1}" ${(+ap.dow||1)===i+1?'selected':''}>${n}</option>`).join('')}</select></label>
+   <label class="lf" id="st-am" hidden><span>Число місяця</span><input id="st-adom" inputmode="numeric" maxlength="2" value="${ap.dom||1}"></label></div>
+  <div class="hint" style="margin:-4px 0 8px">Коли ви відкриєте сайт у день виплати, система сама запише виплату всього залишку за записи до цієї дати. Сума в «Виплати» редагується. Сайт має бути відкритий хоч раз у той день або пізніше.</div>
   <label class="lf"><span>Рахувати баланс % з дати (необов’язково)</span><input id="st-bf" type="date" value="${esc(s.balFrom||'')}"></label>
   <div class="hint" style="margin:-4px 0 8px">Заробіток від % накопичується в кабінеті майстра, виплати його зменшують, залишок переноситься. Дата потрібна, щоб не враховувати старі записи.</div>
   <div class="err" id="st-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
- digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts('st-pct');
+ digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts('st-pct');digitsOnly($('st-adom'));
+ const showAf=()=>{const v=$('st-af').value;$('st-aw').hidden=v!=='week';$('st-am').hidden=v!=='month'};$('st-af').addEventListener('change',showAf);showAf();
  const err=m=>{const e=$('st-err');e.textContent=m;e.hidden=!m};
  const showP=()=>{$('st-pbox').hidden=!(hasLogin||($('st-login')&&$('st-login').checked))};
  if(!hasLogin){$('st-login').addEventListener('change',()=>{$('st-lbox').hidden=!$('st-login').checked;showP()})}
@@ -335,7 +341,7 @@ function openStaff(id){
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
-    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),balFrom:$('st-bf').value||'',pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
