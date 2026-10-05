@@ -603,3 +603,7 @@ html[data-mode="desktop"] .set-p{max-width:760px}
 html[data-mode="desktop"] .setrow[data-sid]>.grp{font-size:15px;padding:9px 34px 9px 12px;border-radius:12px}
 .setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 112px 34px}
 html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 190px 38px}
+.pctrow.grp span{font-weight:800}
+.pctrow.sub{padding-left:16px}
+.pctrow.sub span{color:var(--muted);font-size:12.5px}
+.pctrow.sub input{font-size:14px;padding:5px 9px;width:96px}

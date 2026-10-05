@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4m</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4n</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -203,13 +203,18 @@ function openNewGroup(){
 
 /* відсотки майстра за видами робіт */
 function pctsHtml(st){
- const gl=[],seen=new Set();
- svList().filter(x=>!x.archived).forEach(x=>{const k=grpKeyOfSv(x);if(!seen.has(k)){seen.add(k);gl.push({k,name:x.group||x.name})}});
- if(!gl.length)return '';
- const p=(st&&st.pcts)||{};
+ const sv=svList().filter(x=>!x.archived),order=[],map={};
+ sv.forEach(x=>{const k=grpKeyOfSv(x);if(!map[k]){map[k]={k,name:x.group||x.name,grp:k!==x.id,items:[]};order.push(k)}map[k].items.push(x)});
+ if(!order.length)return '';
+ const p=(st&&st.pcts)||{},val=k=>p[k]!=null&&p[k]!==''?esc(p[k]):'';
+ const row=(k,name,ph,cls)=>`<label class="pctrow ${cls||''}"><span>${esc(name)}</span><input data-spct="${esc(k)}" inputmode="numeric" maxlength="3" placeholder="${ph}" value="${val(k)}"></label>`;
+ const body=order.map(k=>{const g=map[k];
+  if(!g.grp)return row(k,g.name,'загальний');
+  return row(k,g.name+' · вся група','загальний','grp')+g.items.map(x=>row(x.id,x.name,'група','sub')).join('');
+ }).join('');
  return `<details class="pcts"${hasCustomPcts(st)?' open':''}><summary>% за видами робіт (необов’язково)</summary>
-  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться загальний %. Можна поставити 0. Послуги однієї групи мають спільний %.</div>
-  ${gl.map(x=>`<label class="pctrow"><span>${esc(x.name)}</span><input data-spct="${esc(x.k)}" inputmode="numeric" maxlength="3" placeholder="як загальний" value="${p[x.k]!=null&&p[x.k]!==''?esc(p[x.k]):''}"></label>`).join('')}</details>`;
+  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться відсоток вище (група, потім загальний). Можна поставити 0. Відсоток на конкретну послугу сильніший за відсоток групи.</div>
+  ${body}</details>`;
 }
 function readPcts(){
  const o={};
