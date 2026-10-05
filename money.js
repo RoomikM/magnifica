@@ -82,7 +82,8 @@ function openExp(init){
  if(!ex&&!can('expEdit'))return;
  const ro=!can('expEdit');
  const cats=cfgCats();
- const x=ex||{d:todayKey().slice(0,7)===state.ui.emonth?todayKey():state.ui.emonth+'-01',amount:0,cat:cats[0]?cats[0].id:'oth',note:''};
+ const x=ex||{d:todayKey().slice(0,7)===state.ui.emonth?todayKey():state.ui.emonth+'-01',amount:+(cats[0]&&cats[0].amt)||0,cat:cats[0]?cats[0].id:'oth',note:''};
+ const catAmt=id=>{const c=cats.find(k=>k.id===id);return c&&+c.amt>0?+c.amt:0};
  const opts=cats.slice();if(ex&&!opts.some(c=>c.id===ex.cat))opts.push({id:ex.cat,name:ex.catName||'Інше'});
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Витрата':'Нова витрата'}</h2>${closeBtn}</div>
   <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf"><span>Дата</span><input type="date" id="x-d" value="${esc(x.d)}"></label>
@@ -92,6 +93,8 @@ function openExp(init){
   <div class="err" id="x-err" role="alert" hidden></div>
   <div class="actions">${ex&&can('expEdit')?'<button class="btn danger" id="x-del">Видалити</button>':''}${ro?'':'<button class="btn primary" id="x-save">Зберегти</button>'}</div>`);
  digitsOnly($('x-a'));
+ if(!ex&&!ro){let auto=String(x.amount||'');
+  $('x-c').addEventListener('change',()=>{const el=$('x-a'),v=el.value.trim();if(v===''||v===auto){const n=catAmt($('x-c').value);auto=n?String(n):'';el.value=auto}});}
  if(ro)document.querySelectorAll('#sheetPanel input,#sheetPanel select').forEach(el=>{el.disabled=true});
  if(ex&&!ro)arm($('x-del'),'Видалити',async()=>{await Store.deleteExp(ex.id);closeSheet();toast('Витрату видалено')});
  if(!ro)$('x-save').addEventListener('click',async()=>{
