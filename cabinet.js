@@ -19,9 +19,14 @@ function cabinetData(){
  if(u.cmode==='month'){const pk=addMonths(u.cmonth+'-01',-1).slice(0,7);prev=mine.filter(a=>String(a.d).startsWith(pk)&&counted(a)).reduce((t,a)=>t+(+a.total||0),0)}
  const months=[];
  for(let i=5;i>=0;i--){const k=addMonths(todayKey().slice(0,7)+'-01',-i).slice(0,7);{const ml=mine.filter(a=>String(a.d).startsWith(k)&&counted(a));months.push({k,rev:ml.reduce((t,a)=>t+(+a.total||0),0),earn:earnOf(state.me,ml)})}}
- const paid=can('salaryView')?state.sals.filter(x=>x.sid===me&&inP(x.d)).reduce((t,x)=>t+(+x.amount||0),0):null;
+ const paid=state.salsOk?state.sals.filter(x=>x.sid===me&&inP(x.d)).reduce((t,x)=>t+(+x.amount||0),0):null;
+ const bal=state.salsOk?balOf(state.me):null;
+ const dmap=new Map();
+ done.forEach(a=>{(dmap.get(a.d)||dmap.set(a.d,{d:a.d,l:[],paid:0}).get(a.d)).l.push(a)});
+ state.sals.filter(x=>x.sid===me&&inP(x.d)).forEach(x=>{(dmap.get(x.d)||dmap.set(x.d,{d:x.d,l:[],paid:0}).get(x.d)).paid+=(+x.amount||0)});
+ const dayRows=[...dmap.values()].sort((x,y)=>y.d.localeCompare(x.d)).slice(0,31).map(r=>({d:r.d,n:r.l.length,earn:earnOf(state.me,r.l),paid:r.paid}));
  const t=nowKey();
- return{rev,pct,rate,custom,earn:rate?earnOf(state.me,done):0,n:done.length,avg:done.length?rev/done.length:0,
+ return{bal,dayRows,rev,pct,rate,custom,earn:rate?earnOf(state.me,done):0,n:done.length,avg:done.length?rev/done.length:0,
   hours:done.reduce((t,a)=>t+(+a.dur||60),0)/60,clients:cl.size,
   noshow:list.filter(a=>a.st==='noshow').length,cancel:list.filter(a=>a.st==='cancel').length,
   up:mine.filter(a=>isOk(a)&&(a.d+' '+a.t)>t).sort((x,y)=>(x.d+x.t).localeCompare(y.d+y.t)),
@@ -41,12 +46,13 @@ function renderCabinet(){
  const dTxt=delta==null?'':`<span class="cab-d ${delta>=0?'up':'dn'}">${delta>=0?'▲':'▼'} ${Math.abs(delta)}% до минулого місяця</span>`;
  const hero=D.rate
   ?`<div class="card cab-hero"><span class="cab-l">Мій заробіток</span><b class="cab-big">${money(D.earn)}</b><div class="cab-s">${D.custom?'за ставками видів робіт':D.pct+'% від виручки'} · виручка ${money(D.rev)} ${dTxt}</div>
-    ${D.paid!=null?`<div class="sumline" style="margin:10px 0 0"><span>Виплачено: <b>${money(D.paid)}</b></span><span>${D.earn-D.paid>0?'До виплати: <b>'+money(D.earn-D.paid)+'</b>':D.paid>D.earn?'Переплата: <b>'+money(D.paid-D.earn)+'</b>':'Розраховано'}</span></div>`:''}</div>`
+    ${D.bal?`<div class="balbox"><div><span>Нараховано всього</span><b>${money(D.bal.earned)}</b></div><div><span>Виплачено всього</span><b>${money(D.bal.paid)}</b></div><div class="${D.bal.left<0?'neg':'pos'}"><span>${D.bal.left<0?'Переплата':'Залишок до виплати'}</span><b>${money(Math.abs(D.bal.left))}</b></div></div><div class="hint" style="margin:6px 0 0">Невиплачений залишок переходить на наступні дні${D.bal.from?' (рахується з '+ddmm(D.bal.from)+')':''}.</div>`:''}</div>`
   :`<div class="card cab-hero"><span class="cab-l">Виручка по моїх записах</span><b class="cab-big">${money(D.rev)}</b><div class="cab-s">Відсоток не задано. Його виставляє адміністратор. ${dTxt}</div></div>`;
  const tiles=`<div class="tiles"><div><span>Візитів</span><b>${D.n}</b></div><div><span>Середній чек</span><b>${D.avg?money(Math.round(D.avg)):'—'}</b></div><div><span>Клієнтів</span><b>${D.clients}</b></div>
   <div><span>Годин роботи</span><b>${D.hours?(Math.round(D.hours*10)/10).toString().replace('.',','):'0'}</b></div><div><span>Нових клієнтів</span><b>${D.newCl}</b></div><div><span>Попереду</span><b>${D.up.length}</b></div>
   <div><span>Пропусків</span><b>${D.noshow}</b></div><div><span>Скасувань</span><b>${D.cancel}</b></div><div><span>Виручка</span><b>${money(D.rev)}</b></div></div>`;
  const maxM=Math.max(1,...D.months.map(x=>x.rev));
+ const days=D.rate&&D.dayRows.length?`<div class="card"><h2>Заробіток по днях</h2>${D.dayRows.map(r=>`<div class="cab-row"><b class="cab-m">${ddmm(r.d)}</b><span class="m grow">${r.n?r.n+' візит.':''}${r.paid?(r.n?' · ':'')+'виплата '+money(r.paid):''}</span><b>${r.earn?'+'+money(r.earn):'—'}</b></div>`).join('')}</div>`:'';
  const mon=`<div class="card"><h2>Останні 6 місяців</h2>${D.months.map(x=>`<div class="cab-row"><span class="cab-m">${MONTHS[+x.k.slice(5)-1].slice(0,3)} ${x.k.slice(2,4)}</span><div class="bar"><i style="width:${(x.rev/maxM*100).toFixed(1)}%"></i></div><b>${x.rev?money(D.rate?x.earn:x.rev):'—'}</b></div>`).join('')}<div class="hint" style="margin:8px 0 0">${D.rate?'Заробіток за місяць.':'Виручка за місяць.'}</div></div>`;
  const maxS=Math.max(1,...D.svc.map(x=>x.sum));
  const svc=`<div class="card"><h2>Мої послуги</h2>${D.svc.length?D.svc.map(x=>`<div class="cab-row"><span class="cab-m wide">${esc(x.name)} <small>×${x.n}</small></span><div class="bar"><i style="width:${(x.sum/maxS*100).toFixed(1)}%"></i></div><b>${money(Math.round(x.sum))}</b></div>`).join(''):'<div class="empty">Ще немає виконаних записів.</div>'}</div>`;
@@ -54,7 +60,7 @@ function renderCabinet(){
  const wd=`<div class="card"><h2>Завантаження за днями тижня</h2>${order.map(i=>`<div class="cab-row"><span class="cab-m">${WD_SHORT[i]}</span><div class="bar"><i style="width:${(D.wd[i]/maxW*100).toFixed(1)}%"></i></div><b>${D.wd[i]}</b></div>`).join('')}</div>`;
  const top=`<div class="card"><h2>Постійні клієнти</h2>${D.top.length?D.top.map(x=>`<div class="cab-row"><span class="cab-m wide">${esc(x.name)}</span><span class="m">${x.n} візит.</span><b>${money(Math.round(x.sum))}</b></div>`).join(''):'<div class="empty">Поки порожньо.</div>'}</div>`;
  const up=`<div class="card"><h2>Найближчі записи</h2>${D.up.length?D.up.slice(0,8).map(a=>`<div class="cab-row up"><b>${ddmm(a.d)} ${esc(a.t)}</b><span class="cab-m wide">${esc(a.name||'Без імені')}</span><span class="m">${esc(itemsText(a))}</span></div>`).join(''):'<div class="empty">Майбутніх записів немає.</div>'}</div>`;
- el.innerHTML=nav+hero+tiles+`<div class="cab-grid">${up}${mon}${svc}${wd}${top}</div>`;
+ el.innerHTML=nav+hero+tiles+`<div class="cab-grid">${days}${up}${mon}${svc}${wd}${top}</div>`;
 }
 $('cabinet').addEventListener('click',e=>{
  let b;

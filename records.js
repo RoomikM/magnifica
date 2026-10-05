@@ -167,6 +167,7 @@ function openAppt(init){
   <div class="lbl2">Роботи</div><div class="chips" id="p-chips"></div>
   <select class="more" id="p-more" aria-label="Інші роботи"></select>
   <div class="sel" id="p-sel"></div>
+  <div class="xwrap" id="p-xw"></div>
   <label class="lf"><span>Примітка</span><input id="p-note" autocomplete="off" placeholder="необов’язково" value="${esc(a.note)}" maxlength="160"></label>
   <div class="lbl2">Статус</div>
   <div class="seg stseg" id="p-st"><button type="button" data-s="ok">Активний</button><button type="button" data-s="cancel">Скасовано</button><button type="button" data-s="noshow">Не прийшов</button></div>
@@ -195,8 +196,14 @@ function openAppt(init){
   more.innerHTML='<option value="">＋ Інша робота…</option>'+rest.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.price?' — '+fmt(s.price)+' ₴':''}</option>`).join('');
  };
  const drawSel=()=>{
-  $('p-sel').innerHTML=a.items.map((it,i)=>`<div class="selrow"><span class="sname"><i class="dot" style="background:${colorOf(svIndex(it.sid))}"></i>${esc(it.name)}</span><input data-i="${i}" inputmode="numeric" value="${it.price||''}" placeholder="0" aria-label="Ціна: ${esc(it.name)}"><button class="rm" type="button" data-rm="${i}" aria-label="Прибрати">✕</button></div>`).join('');
+  $('p-sel').innerHTML=a.items.map((it,i)=>`<div class="selrow"><span class="sname"><i class="dot" style="background:${colorOf(svIndex(it.sid))}"></i>${esc(it.name)}${it.sid==='x'?' <small class="xtag">додатково</small>':''}</span><input data-i="${i}" inputmode="numeric" value="${it.price||''}" placeholder="0" aria-label="Ціна: ${esc(it.name)}"><button class="rm" type="button" data-rm="${i}" aria-label="Прибрати">✕</button></div>`).join('');
   upTotal();
+ };
+ const drawX=(open)=>{
+  const w=$('p-xw');if(ro){w.innerHTML='';return}
+  w.innerHTML=open?`<div class="xform"><input id="p-xn" autocomplete="off" placeholder="Що ще зробили? напр. зняття гель-лаку" maxlength="60"><input id="p-xp" inputmode="numeric" placeholder="Ціна, ₴" maxlength="7"><button class="btn sm primary" type="button" id="p-xok">Додати</button><button class="btn sm" type="button" id="p-xno">Скасувати</button></div>`
+   :'<button class="btn sm xadd" type="button" id="p-xadd">＋ Додаткова робота (непередбачена)</button>';
+  if(open){digitsOnly($('p-xp'));$('p-xn').focus()}
  };
  const syncDur=()=>{
   if(a.durManual)return;
@@ -212,7 +219,18 @@ function openAppt(init){
   n.hidden=a.st==='ok';
   n.textContent=a.st==='cancel'?'Запис скасовано заздалегідь: у дохід не входить, у статистиці клієнта рахується як скасування.':a.st==='noshow'?'Клієнт не прийшов: у дохід не входить, у статистиці клієнта рахується як пропуск.':'';
  };
- drawChips();drawSel();showSt();drawSub();
+ drawChips();drawSel();showSt();drawSub();drawX(false);
+ $('p-xw').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='p-xadd'){drawX(true);return}
+  if(b.id==='p-xno'){drawX(false);return}
+  if(b.id==='p-xok'){
+   const n=$('p-xn').value.trim(),pr=numOf($('p-xp').value);
+   if(!n){$('p-xn').focus();return}
+   if(!(pr>0)){$('p-xp').focus();return}
+   a.items.push({sid:'x',name:n,price:pr});drawSel();drawX(false);
+  }
+ });
  $('p-disc').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);a.disc=Math.min(100,+e.target.value||0);upTotal()});
  $('p-subw').addEventListener('change',e=>{if(e.target.id==='p-sub'){a.subOn=e.target.checked;upTotal()}});
  $('p-chips').addEventListener('click',e=>{
@@ -318,7 +336,7 @@ function openAppt(init){
  drawSlots();
 
  if(ro){
-  document.querySelectorAll('#sheetPanel input,#sheetPanel select,#sheetPanel .chip,#sheetPanel .slot,#sheetPanel #p-st button,#sheetPanel .rm').forEach(el=>{el.disabled=true});
+  document.querySelectorAll('#sheetPanel input,#sheetPanel select,#sheetPanel .chip,#sheetPanel .slot,#sheetPanel #p-st button,#sheetPanel .rm,#sheetPanel .xadd').forEach(el=>{el.disabled=true});
  }
  if(ex&&can('apptDel'))arm($('p-del'),'Видалити',async()=>{if(ex.subUsed)await subAdjust(ex.cid,1);await Store.deleteAppt(a.id);closeSheet();toast('Запис видалено');offerSlot(ex)});
  if(!ro)$('p-save').addEventListener('click',async()=>{

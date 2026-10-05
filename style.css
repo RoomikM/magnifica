@@ -607,3 +607,13 @@ html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1
 .pctrow.sub{padding-left:16px}
 .pctrow.sub span{color:var(--muted);font-size:12.5px}
 .pctrow.sub input{font-size:14px;padding:5px 9px;width:96px}
+
+/* баланс зарплати, додаткові роботи */
+.balbox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.balbox>div{background:var(--card-2,rgba(127,127,127,.1));border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.balbox span{font-size:11px;opacity:.7}.balbox b{font-size:15px}
+.balbox .pos b{color:var(--accent)}.balbox .neg b{color:#d94c4c}
+.xwrap{margin:6px 0 2px}.xform{display:flex;flex-wrap:wrap;gap:6px}.xform #p-xn{flex:1 1 100%}.xform #p-xp{flex:1 1 90px}
+.xform input{min-width:0}.xform .btn{grid-column:auto}
+.xtag{font-size:10px;opacity:.65;margin-left:4px}
+@media(max-width:480px){.balbox{grid-template-columns:1fr}}

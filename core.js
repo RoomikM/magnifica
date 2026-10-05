@@ -117,7 +117,7 @@ function saveCfg(){
 function svList(){
  const list=cfgServices().map(s=>({id:s.id,name:s.name,price:+s.price||0,dur:+s.dur||0,gid:s.gid||'',group:(grpOf(s)||{}).name||''}));
  const seen=new Set(list.map(s=>s.id));
- const add=(id,name)=>{if(!seen.has(id)){seen.add(id);list.push({id,name:name||LEGACY_NAMES[id]||id,price:0,archived:true})}};
+ const add=(id,name)=>{if(!seen.has(id)){seen.add(id);list.push({id,name:id==='x'?'Додаткові роботи':(name||LEGACY_NAMES[id]||id),price:0,archived:true})}};
  state.days.forEach(v=>Object.keys((v&&v.a)||{}).forEach(id=>add(id)));
  state.appts.forEach(a=>(a.items||[]).forEach(it=>add(it.sid,it.name)));
  return list;
@@ -133,7 +133,7 @@ const grpOf=s=>{
 };
 const grpKeyOfSv=s=>{const g=grpOf(s);return g?g.key:(s?s.id:'')};
 const svGrpKey=sid=>grpKeyOfSv(cfgServices().find(x=>x.id===sid))||sid;
-const svGrpName=(sid,fallback)=>{const s=cfgServices().find(x=>x.id===sid);return s?((grpOf(s)||{}).name||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
+const svGrpName=(sid,fallback)=>{if(sid==='x')return 'Додаткові роботи';const s=cfgServices().find(x=>x.id===sid);return s?((grpOf(s)||{}).name||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
 function svGroups(S,total){
  const map=new Map();
  SV.forEach(sv=>{
@@ -161,9 +161,18 @@ function syncPeople(list){
 function itemFactor(a){const s=(a.items||[]).reduce((t,i)=>t+(+i.price||0),0);return s>0&&a.total!=null&&isFinite(+a.total)?(+a.total)/s:1}
 /* відсоток майстра: окремий для кожного виду робіт (pcts), інакше загальний (pct) */
 const pctFor=(st,sid)=>{if(!st)return 0;const pc=st.pcts||{},p=pc[sid]!=null&&pc[sid]!==''?pc[sid]:pc[svGrpKey(sid)];return p!=null&&p!==''&&isFinite(+p)?Math.min(100,Math.max(0,+p)):(+st.pct>0?+st.pct:0)};
-const hasCustomPcts=st=>!!st&&!!st.pcts&&Object.values(st.pcts).some(v=>v!==''&&v!=null&&isFinite(+v));
+const hasCustomPcts=st=>!!st&&!!st.pcts&&Object.values(st.pcts).some(v=>v!==''&&v!=null&&isFinite(+v)&&+v!==(+st.pct||0));
 const hasRates=st=>!!st&&(+st.pct>0||hasCustomPcts(st));
 const earnOf=(st,list)=>Math.round(list.reduce((t,a)=>{const f=itemFactor(a);return t+(a.items||[]).reduce((x,i)=>x+(+i.price||0)*f*pctFor(st,i.sid)/100,0)},0));
+/* баланс зарплати майстра: нараховано з записів мінус усі виплати; залишок переходить на наступні дні */
+function balOf(st){
+ if(!st||!hasRates(st))return null;
+ const id=st.id,from=isDate(st.balFrom)?st.balFrom:'';
+ const done=state.appts.filter(a=>a.m===id&&counted(a)&&(!from||a.d>=from));
+ const earned=earnOf(st,done);
+ const paid=state.sals.filter(x=>x.sid===id&&(!from||x.d>=from)).reduce((t,x)=>t+(+x.amount||0),0);
+ return{earned,paid,left:earned-paid,from,done};
+}
 const isOk=a=>a.st!=='cancel'&&a.st!=='noshow';
 const counted=a=>isOk(a)&&(a.d+' '+a.t)<=nowKey();
 

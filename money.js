@@ -65,8 +65,10 @@ function salaryView(D,mk){
      ?`<div class="due warn">До виплати: ${di.units.length} ${FREQ_UNIT[s.pay.freq]} · <b>${money(di.amount)}</b> <span>(${ddmm(di.from)}–${ddmm(di.to)})</span></div>`
      :`<div class="due">Виплачено. Наступний період із ${ddmm(di.next)}</div>`;
    }
+   const b=balOf(s);
+   if(b)st+=`<div class="due ${b.left>0?'warn':''}">% від робіт: нараховано <b>${money(b.earned)}</b> · виплачено ${money(b.paid)} · ${b.left<0?'переплата':'залишок'} <b>${money(Math.abs(b.left))}</b></div>`;
    return `<div class="payc"><div class="payc-h"><span class="av">${esc(initials(s.name))}</span><div><b>${esc(s.name)}</b><div class="m">${esc(s.role||'')}${s.role?' · ':''}${scheme}</div></div></div>${st}
-    <div class="actions" style="margin-top:8px"><button class="btn sm primary" data-pay="${esc(s.id)}">${di&&di.units.length?'Виплатити за схемою':'Виплатити'}</button></div></div>`;
+    <div class="actions" style="margin-top:8px"><button class="btn sm primary" data-pay="${esc(s.id)}">${di&&di.units.length?'Виплатити за схемою':(balOf(s)&&balOf(s).left>0?'Виплатити залишок':'Виплатити')}</button></div></div>`;
   }).join('');
   sched=`<div class="card"><h2>Графік виплат</h2><div class="caption">Що настало до виплати за схемою кожного працівника</div>${cards||'<div class="empty">Працівників ще немає. Додайте їх у налаштуваннях.</div>'}</div>`;
  }
@@ -131,8 +133,11 @@ function openSalary(init){
  digitsOnly($('s-a'));
  const fill=(prefill)=>{
   const s=state.staff.find(z=>z.id===$('s-p').value),box=$('s-due');
-  const di=isOwner()&&s?dueInfo(s):null;
-  if(di&&di.units.length&&!ex){
+  const di=isOwner()&&s?dueInfo(s):null,b=isOwner()&&s?balOf(s):null;
+  if(b&&!ex&&!(di&&di.units.length)){
+   box.hidden=false;box.textContent=`Баланс майстра: нараховано ${fmt(b.earned)} ₴, виплачено ${fmt(b.paid)} ₴, ${b.left<0?'переплата':'залишок до виплати'} ${fmt(Math.abs(b.left))} ₴. Якщо виплатите менше, решта залишиться на наступні дні.`;
+   if(prefill)$('s-a').value=b.left>0?String(b.left):'';
+  }else if(di&&di.units.length&&!ex){
    box.hidden=false;box.textContent=`За схемою (${FREQ_TXT[s.pay.freq]} · ${fmt(+s.pay.amount)} ₴): до виплати ${di.units.length} ${FREQ_UNIT[s.pay.freq]} = ${fmt(di.amount)} ₴ за період ${ddmm(di.from)}–${ddmm(di.to)}.`;
    if(prefill){$('s-a').value=String(di.amount);$('s-to').value=di.to}
   }else box.hidden=true;

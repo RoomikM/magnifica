@@ -96,7 +96,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4o</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4p</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -212,8 +212,8 @@ function pctsHtml(st){
   if(!g.grp)return row(k,g.name,'загальний');
   return row(k,g.name+' · вся група','загальний','grp')+g.items.map(x=>row(x.id,x.name,'група','sub')).join('');
  }).join('');
- return `<details class="pcts"${hasCustomPcts(st)?' open':''}><summary>% за видами робіт (необов’язково)</summary>
-  <div class="hint" style="margin:6px 0 8px">Порожнє поле = береться відсоток вище (група, потім загальний). Можна поставити 0. Відсоток на конкретну послугу сильніший за відсоток групи.</div>
+ return `<details class="pcts"${hasCustomPcts(st)?' open':''}><summary>% за видами робіт (підставляється із загального)</summary>
+  <div class="hint" style="margin:6px 0 8px">Коли вписуєте загальний %, він сам ставиться на всі роботи. Потім можна змінити % будь-якій роботі чи групі окремо. Можна поставити 0. Відсоток послуги сильніший за відсоток групи.</div>
   ${body}</details>`;
 }
 function readPcts(){
@@ -221,7 +221,18 @@ function readPcts(){
  document.querySelectorAll('[data-spct]').forEach(i=>{const v=i.value.replace(/\D/g,'');if(v!=='')o[i.dataset.spct]=Math.min(100,+v)});
  return o;
 }
-const bindPcts=()=>document.querySelectorAll('[data-spct]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,3)}));
+const bindPcts=gid=>{
+ const all=()=>document.querySelectorAll('[data-spct]');
+ all().forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,3)}));
+ const g=$(gid);if(!g)return;
+ let prev=g.value.replace(/\D/g,'');
+ /* загальний % розмножується на всі види робіт; уже змінені вручну не чіпаємо */
+ g.addEventListener('input',()=>{
+  const v=g.value.replace(/\D/g,'').slice(0,3);
+  all().forEach(i=>{if(i.value===''||i.value===prev)i.value=v});
+  prev=v;
+ });
+};
 
 /* ---------- працівник ---------- */
 function openStaff(id){
@@ -257,9 +268,11 @@ function openStaff(id){
    <label class="lf"><span>Рахувати з</span><input id="st-start" type="date" value="${esc(pay.start||todayKey())}"></label></div>
   <label class="lf"><span>Загальний % від виручки майстра</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
   ${pctsHtml(s)}
+  <label class="lf"><span>Рахувати баланс % з дати (необов’язково)</span><input id="st-bf" type="date" value="${esc(s.balFrom||'')}"></label>
+  <div class="hint" style="margin:-4px 0 8px">Заробіток від % накопичується в кабінеті майстра, виплати його зменшують, залишок переноситься. Дата потрібна, щоб не враховувати старі записи.</div>
   <div class="err" id="st-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
- digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts();
+ digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts('st-pct');
  const err=m=>{const e=$('st-err');e.textContent=m;e.hidden=!m};
  const showP=()=>{$('st-pbox').hidden=!(hasLogin||($('st-login')&&$('st-login').checked))};
  if(!hasLogin){$('st-login').addEventListener('change',()=>{$('st-lbox').hidden=!$('st-login').checked;showP()})}
@@ -322,7 +335,7 @@ function openStaff(id){
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
-    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),balFrom:$('st-bf').value||'',pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
@@ -348,9 +361,10 @@ function openSelf(ex){
   <label class="chk"><input type="checkbox" id="sf-master" ${!ex||ex.master?'checked':''}> Майстер: приймаю клієнтів</label>
   <label class="lf"><span>Загальний % від виручки</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
   ${pctsHtml(ex)}
+  <label class="lf"><span>Рахувати баланс % з дати (необов’язково)</span><input id="sf-bf" type="date" value="${esc(ex&&ex.balFrom||'')}"></label>
   <div class="err" id="sf-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="sf-del">Прибрати зі списку</button>':''}<button class="btn primary" id="sf-save">Зберегти</button></div>`);
- digitsOnly($('sf-pct'));bindPcts();
+ digitsOnly($('sf-pct'));bindPcts('sf-pct');
  const err=m=>{const e=$('sf-err');e.textContent=m;e.hidden=!m};
  if(ex)arm($('sf-del'),'Прибрати зі списку',async()=>{
   await Store.deleteStaff(uid);await syncPeople(state.staff.filter(x=>x.id!==uid));closeSheet();toast('Вас прибрано зі списку майстрів');
@@ -360,7 +374,7 @@ function openSelf(ex){
   err('');const b=$('sf-save');b.disabled=true;b.textContent='Зберігаю…';
   try{
    const obj={id:uid,name,role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
-    pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),pay:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),balFrom:$('sf-bf').value||'',pay:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(uid,obj);
    await syncPeople(state.staff.filter(x=>x.id!==uid).concat([obj]));
    closeSheet();toast('Збережено');

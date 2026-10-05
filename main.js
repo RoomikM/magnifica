@@ -148,7 +148,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab
 /* ---------- запуск ---------- */
 function setView(v){document.documentElement.setAttribute('data-view',v)}
 function resetData(){
- state.days=new Map();state.baseline={};state.appts=[];state.wait=[];state.exps=[];state.sals=[];state.clients=[];state.staff=[];state.cfg=null;
+ state.days=new Map();state.baseline={};state.appts=[];state.wait=[];state.exps=[];state.sals=[];state.salsOk=false;state.clients=[];state.staff=[];state.cfg=null;
  state.newAppts=0;seenAppts.clear();apptsInit=false;drawBadge();state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
 }
 document.addEventListener('click',e=>{const b=e.target.closest('.skin-dot');if(b)setSkin(b.dataset.skin)});
@@ -184,7 +184,7 @@ addEventListener('error',e=>{
   unsubData=Store.subscribe({
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
-   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:upd('sals'),clients:upd('clients'),staff:upd('staff'),
+   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:l=>{state.salsOk=true;upd('sals')(l)},clients:upd('clients'),staff:upd('staff'),
    cfg:c=>{state.cfg=c;if(checkKick())return;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid});
