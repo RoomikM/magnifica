@@ -624,3 +624,15 @@ html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1
 .xbtns{display:flex;gap:8px;justify-content:flex-end;margin:2px 0 8px}
 .xtag{font-size:10px;opacity:.65;margin-left:4px}
 @media(max-width:480px){.balbox{grid-template-columns:1fr}}
+
+/* записи по майстрах: стислий вигляд на телефоні */
+.mc-bar{display:flex;justify-content:flex-end;margin:0 0 8px}
+.mc-s .mc-g{flex-basis:30px}
+.mc-s .mc-g .tl-hr{font-size:9px}
+.mc-s .mc-c{flex:1 1 0;min-width:0}
+.mc-s .mc-h{padding:3px 1px;gap:3px}
+.mc-s .mc-h .av{width:30px;height:30px;font-size:11px;letter-spacing:-.02em}
+.mc-s .ev{padding:2px 3px;border-radius:6px}
+.mc-s .ev b{font-size:9.5px;display:block}
+.mc-s .ev .n{font-size:10px}
+.mc-s .ev .s{display:none}

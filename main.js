@@ -34,6 +34,7 @@ $('records').addEventListener('click',e=>{
  const u=state.ui,t=e.target;let b;
  if((b=t.closest('[data-v]'))){u.aview=b.dataset.v;lsSet('magnifica-aview',u.aview);renderRecords();return}
  if((b=t.closest('[data-f]'))){u.afilter=b.dataset.f;renderRecords();return}
+ if((b=t.closest('[data-mcw]'))){state.ui.mwide=!state.ui.mwide;renderRecords();return}
  if((b=t.closest('[data-nav]'))){
   const n=b.dataset.nav;
   if(n==='today')u.adate=todayKey();else u.adate=addDays(u.adate,(+n)*(u.aview==='week'?7:1));

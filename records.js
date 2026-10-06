@@ -54,9 +54,15 @@ const masterCols=l=>{
  if(free.length)cols.push({id:'',name:'Без майстра',list:free});
  return cols;
 };
+/* кружечок: перша літера прізвища + перша літера імені («Ірина Пекарська» → ПІ) */
+const sInit=n=>{const w=String(n||'?').trim().split(/\s+/).filter(Boolean);return((w.length>1?w[w.length-1][0]+w[0][0]:(w[0]||'?').slice(0,2))).toUpperCase()};
 function masterDay(date,cols,sh,eh,hpx){
- const head=c=>`<div class="mc-h"><i class="av">${esc(initials(c.name))}</i><b>${esc(c.name)}</b><span><em>${activeN(c.list)}</em> зап.${activeSum(c.list)?' · '+money(activeSum(c.list)):''}</span></div>`;
- return `<div class="mc"><div class="mc-in"><div class="mc-g"><div class="mc-gh"></div>${gutter(sh,eh,hpx)}</div>${cols.map(c=>`<div class="mc-c">${head(c)}${tlCol(date,c.list,sh,eh,hpx,true,c.id)}</div>`).join('')}</div></div>`;
+ const sm=isMobile()&&!state.ui.mwide;
+ const head=sm
+  ?c=>`<div class="mc-h" title="${esc(c.name)}"><i class="av">${esc(sInit(c.name))}</i><span><em>${activeN(c.list)}</em></span></div>`
+  :c=>`<div class="mc-h"><i class="av">${esc(initials(c.name))}</i><b>${esc(c.name)}</b><span><em>${activeN(c.list)}</em> зап.${activeSum(c.list)?' · '+money(activeSum(c.list)):''}</span></div>`;
+ const bar=isMobile()?`<div class="mc-bar"><button class="btn sm" type="button" data-mcw>${sm?'⤢ Розгорнути календар':'⤡ Стиснути календар'}</button></div>`:'';
+ return bar+`<div class="mc ${sm?'mc-s':''}"><div class="mc-in"><div class="mc-g"><div class="mc-gh"></div>${gutter(sh,eh,hpx)}</div>${cols.map(c=>`<div class="mc-c">${head(c)}${tlCol(date,c.list,sh,eh,hpx,true,c.id)}</div>`).join('')}</div></div>`;
 }
 function agenda(list,empty){
  if(!list.length)return `<div class="empty">${empty}</div>`;
