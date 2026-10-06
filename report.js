@@ -20,7 +20,7 @@ function repAllAggs(){
 }
 
 /* ---- чисті функції (вшиваються у файл) ---- */
-function repCombine(sel,ALL,today){
+function repCombine(sel,ALL,today,TOTAL){
  const A=ALL.filter(a=>sel.includes(a.key)).sort((x,y)=>x.key<y.key?-1:1);
  const sum=f=>A.reduce((t,a)=>t+f(a),0);
  const rev=sum(a=>a.rev),sal=sum(a=>a.sal),expOther=sum(a=>a.ex),exp=expOther+sal,visits=sum(a=>a.visits);
@@ -33,7 +33,7 @@ function repCombine(sel,ALL,today){
  let prev=null;
  if(A.length===1){const[y,m]=A[0].key.split('-').map(Number),pk=new Date(Date.UTC(y,m-2,1)).toISOString().slice(0,7),p=ALL.find(a=>a.key===pk);if(p&&p.rev>0)prev={rev:p.rev,exp:p.ex+p.sal}}
  const net=rev-exp;
- return{A,keys:A.map(a=>a.key),all:A.length===ALL.length&&ALL.length>0,rev,exp,sal,net,groups,cats,visits,days,rows,prev,today,
+ return{A,keys:A.map(a=>a.key),all:A.length>0&&A.length===(TOTAL||ALL.length),rev,exp,sal,net,groups,cats,visits,days,rows,prev,today,
   active:days.filter(d=>d.total>0).length,margin:rev?Math.round(net/rev*100):null,
   best:days.reduce((b,x)=>!b||x.total>b.total?x:b,null),live:A.some(a=>a.key===today.slice(0,7))};
 }
@@ -100,7 +100,7 @@ function repRender(R,fin){
 }
 
 /* ---- інтерфейс у застосунку ---- */
-const repChips=(ALL,sel)=>`<div class="lbl">Місяці у звіті (можна обрати кілька)</div><button class="chp" type="button" data-rall aria-pressed="${sel.length===ALL.length}">Усі</button><button class="chp" type="button" data-rnone aria-pressed="false">Очистити</button>${ALL.slice().reverse().map(a=>`<button class="chp" type="button" data-rm="${a.key}" aria-pressed="${sel.includes(a.key)}">${MSHORT[+a.key.slice(5)-1]} ${a.key.slice(0,4)}</button>`).join('')}`;
+const repChips=(ALL,sel)=>`<div class="lbl">Місяці у звіті (можна обрати кілька)</div><button class="chp" type="button" data-rall aria-pressed="${sel.length===ALL.length}">Усі</button><button class="chp" type="button" data-rnone aria-pressed="false">Очистити</button>${ALL.slice().reverse().map(a=>`<button class="chp" type="button" data-rm="${a.key}" aria-pressed="${sel.includes(a.key)}">${MSHORT[+a.key.slice(5)-1]} ${a.key.slice(0,4)}${a.key===todayKey().slice(0,7)?' · триває':''}</button>`).join('')}`;
 function reportCardHtml(){
  if(!isOwner())return '';
  return `<div class="card"><h2 class="set-h">Звіт для рієлтора</h2>
@@ -111,7 +111,9 @@ function reportCardHtml(){
 function openReport(fin){
  let ov=$('rep');if(ov)ov.remove();
  const ALL=repAllAggs();if(!ALL.length){toast('Немає даних для звіту');return}
- let sel=ALL.map(a=>a.key),finOn=fin!==false;
+ const cur=todayKey().slice(0,7);
+ let sel=ALL.map(a=>a.key).filter(k=>k<cur),finOn=fin!==false;
+ if(!sel.length)sel=ALL.map(a=>a.key);
  ov=document.createElement('div');ov.id='rep';ov.className='rep';
  ov.innerHTML=`<div class="rep-bar"><button class="btn sm" id="repClose">← Закрити</button><div class="rep-top"><label class="chk" style="margin:0"><input type="checkbox" id="repFin2" ${finOn?'checked':''}> витрати і прибуток</label><button class="btn sm" id="repHtml">Зберегти HTML</button><button class="btn sm primary" id="repPrint">Друк / PDF</button></div></div><div class="rep-months" id="repMonths"></div><div class="rep-body" id="repBody"></div>`;
  document.body.appendChild(ov);document.documentElement.classList.add('rep-open');
@@ -135,8 +137,10 @@ function openReport(fin){
 
 /* ---- автономний HTML: усі дані вшиті; вибір місяців (JS) + запасний режим без JS (один місяць / усі) ---- */
 async function exportReportHtml(ALL,sel,fin){
- if(!ALL){ALL=repAllAggs();sel=ALL.map(a=>a.key);fin=$('repFin')?$('repFin').checked:true}
- if(!ALL.length)return;
+ if(!ALL){ALL=repAllAggs();const c=todayKey().slice(0,7);sel=ALL.map(a=>a.key).filter(k=>k<c);fin=$('repFin')?$('repFin').checked:true}
+ if(!sel.length){toast('Оберіть хоча б один місяць');return}
+ const TOTAL=ALL.length;
+ ALL=ALL.filter(a=>sel.includes(a.key));/* у файл потрапляють лише вибрані місяці */
  let css='';try{css=await (await fetch('style.css',{cache:'no-cache'})).text()}catch(e){toast('Не вдалось зібрати файл. Перевірте з’єднання.');return}
  const i1=css.indexOf('/* Туман'),i2=css.indexOf('*{box-sizing:border-box}'),i3=css.indexOf('/* звіт для рієлтора');
  const skinCss=css.slice(i1,i2),repCss=css.slice(i3);
@@ -149,12 +153,12 @@ async function exportReportHtml(ALL,sel,fin){
  const swCss=Object.entries({steel:'#b4c2cc,#38617c',asphalt:'#141619,#8db5a8',coffee:'#d8c6b2,#8b5e3c',ivory:'#f1ece0,#aa9a70',night:'#12171d,#7f9db6'}).map(([k,v])=>`.swatch.${k}{background:linear-gradient(135deg,${v})}`).join('');
  const act=SKINS.map(([k])=>`#th-${k}:checked~.rep label[for=th-${k}]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}`).join('');
  /* запасний режим без JS: «Усі» і кожен місяць окремо (радіо + CSS) */
- const opts=[['all','Усі періоди']].concat(ALL.slice().reverse().map(a=>[a.key,MONTHS[+a.key.slice(5)-1]+' '+a.key.slice(0,4)]));
+ const opts=[['all',sel.length===TOTAL?'Усі періоди':'Усі вибрані']].concat(ALL.slice().reverse().map(a=>[a.key,MONTHS[+a.key.slice(5)-1]+' '+a.key.slice(0,4)]));
  const keyOf2=v=>v==='all'?ALL.map(a=>a.key):[v];
  const radios=opts.map(([v],i)=>`<input type="radio" name="per" id="r${i}" class="hid" ${i===0?'checked':''}>`).join('')+`<input type="checkbox" id="fin" class="hid" ${fin?'checked':''}>`;
  const nj=opts.map(([v,n],i)=>`<label for="r${i}" class="chp">${esc(n)}</label>`).join('');
  const today=todayKey();
- const bodies=opts.map(([v],i)=>{const R=repCombine(keyOf2(v),ALL,today);return `<div class="ps p${i}f1">${repRender(R,true)}</div><div class="ps p${i}f0">${repRender(R,false)}</div>`}).join('');
+ const bodies=opts.map(([v],i)=>{const R=repCombine(keyOf2(v),ALL,today,TOTAL);return `<div class="ps p${i}f1">${repRender(R,true)}</div><div class="ps p${i}f0">${repRender(R,false)}</div>`}).join('');
  const rules=opts.map((o,i)=>`#r${i}:checked~#fin:checked~.rep-body .p${i}f1,#r${i}:checked~#fin:not(:checked)~.rep-body .p${i}f0{display:block}#r${i}:checked~.rep-months.nj label[for=r${i}]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}`).join('');
  const pure=[repCombine,repBars,repChart,repRender].map(f=>f.toString()).join('\n');
  const js=`const MONTHS=${JSON.stringify(MONTHS)},MSHORT=${JSON.stringify(MSHORT)},MGEN=${JSON.stringify(MGEN)};
@@ -165,7 +169,7 @@ let sel=${JSON.stringify(sel)},finOn=${fin?'true':'false'};
 document.documentElement.classList.add('js');
 const $=id=>document.getElementById(id);
 const chips=()=>'<div class="lbl">Місяці у звіті (можна обрати кілька)</div><button class="chp" type="button" data-rall aria-pressed="'+(sel.length===ALL.length)+'">Усі</button><button class="chp" type="button" data-rnone aria-pressed="false">Очистити</button>'+ALL.slice().reverse().map(a=>'<button class="chp" type="button" data-rm="'+a.key+'" aria-pressed="'+sel.includes(a.key)+'">'+MSHORT[+a.key.slice(5)-1]+' '+a.key.slice(0,4)+'</button>').join('');
-const draw=()=>{$('jsMonths').innerHTML=chips();$('jsBody').innerHTML=repRender(repCombine(sel,ALL,TODAY),finOn);$('finJs').checked=finOn};
+const draw=()=>{$('jsMonths').innerHTML=chips();$('jsBody').innerHTML=repRender(repCombine(sel,ALL,TODAY,${TOTAL}),finOn);$('finJs').checked=finOn};
 $('jsMonths').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
  if(b.hasAttribute('data-rall'))sel=ALL.map(a=>a.key);else if(b.hasAttribute('data-rnone'))sel=[];
  else if(b.dataset.rm)sel=sel.includes(b.dataset.rm)?sel.filter(k=>k!==b.dataset.rm):sel.concat([b.dataset.rm]);draw()});
