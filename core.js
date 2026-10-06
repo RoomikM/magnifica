@@ -142,7 +142,14 @@ function svGroups(S,total){
  SV.forEach(sv=>{
   const x=S[sv.id]||{amount:0,count:0};
   let k=grpKeyOfSv(sv);
-  if(sv.archived&&!sv.group&&sv.id!=='x'){const m=byName.get(String(sv.name).trim().toLowerCase());if(m)k=m}
+  if(sv.archived&&!sv.group&&sv.id!=='x'){
+   const nm=String(sv.name).trim().toLowerCase();let m=byName.get(nm);
+   if(!m&&nm){/* «Брови» → «Брови та вії»: єдина група/послуга, що починається з цієї назви */
+    const c=new Set();byName.forEach((key,n)=>{if(n===nm||n.startsWith(nm+' ')||n.startsWith(nm+'-'))c.add(key)});
+    if(c.size===1)m=[...c][0];
+   }
+   if(m)k=m;
+  }
   let g=map.get(k);if(!g){g={key:k,name:sv.group||sv.name,amount:0,count:0,archived:true,first:sv.id};map.set(k,g)}
   g.amount+=x.amount;g.count+=x.count;if(!sv.archived)g.archived=false;
  });
