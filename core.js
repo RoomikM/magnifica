@@ -136,8 +136,13 @@ const svGrpKey=sid=>grpKeyOfSv(cfgServices().find(x=>x.id===sid))||sid;
 const svGrpName=(sid,fallback)=>{if(sid==='x')return 'Додаткові роботи';const s=cfgServices().find(x=>x.id===sid);return s?((grpOf(s)||{}).name||s.name):(fallback||LEGACY_NAMES[sid]||sid)};
 function svGroups(S,total){
  const map=new Map();
+ /* старі (архівні) послуги з історії зливаємо в банер групи/послуги з такою ж назвою, щоб не було дублів */
+ const byName=new Map();
+ SV.filter(v=>!v.archived).forEach(v=>{const k=grpKeyOfSv(v);byName.set(String(v.name).trim().toLowerCase(),k);if(v.group)byName.set(String(v.group).trim().toLowerCase(),k)});
  SV.forEach(sv=>{
-  const x=S[sv.id]||{amount:0,count:0},k=grpKeyOfSv(sv);
+  const x=S[sv.id]||{amount:0,count:0};
+  let k=grpKeyOfSv(sv);
+  if(sv.archived&&!sv.group&&sv.id!=='x'){const m=byName.get(String(sv.name).trim().toLowerCase());if(m)k=m}
   let g=map.get(k);if(!g){g={key:k,name:sv.group||sv.name,amount:0,count:0,archived:true,first:sv.id};map.set(k,g)}
   g.amount+=x.amount;g.count+=x.count;if(!sv.archived)g.archived=false;
  });
