@@ -102,7 +102,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5k</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5l</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -295,6 +295,7 @@ function openStaff(id){
   <label class="lf"><span>Рахувати баланс % з дати (необов’язково)</span><input id="st-bf" type="date" value="${esc(s.balFrom||'')}"></label>
   <div class="hint" style="margin:-4px 0 8px">Заробіток від % накопичується в кабінеті майстра, виплати його зменшують, залишок переноситься. Дата потрібна, щоб не враховувати старі записи.</div>
   <div class="err" id="st-err" role="alert" hidden></div>
+  ${ex&&!ex.uid&&state.staff.some(x=>x.id!==ex.id)?`<div class="lf"><span>Це дубль? Перенести всі записи й виплати в іншу картку, а цю видалити</span><div style="display:flex;gap:8px"><select id="st-mg" style="flex:1">${state.staff.filter(x=>x.id!==ex.id).map(x=>`<option value="${esc(x.id)}">${esc([x.name,x.surname].filter(Boolean).join(' '))}</option>`).join('')}</select><button class="btn" type="button" id="st-mgbtn">Перенести</button></div></div>`:''}
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
  digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts('st-pct');digitsOnly($('st-adom'));
  const showAf=()=>{const v=$('st-af').value;$('st-aw').hidden=v!=='week';$('st-am').hidden=v!=='month'};$('st-af').addEventListener('change',showAf);showAf();
@@ -332,6 +333,15 @@ function openStaff(id){
    }
   });
  }
+ if(ex&&$('st-mgbtn'))arm($('st-mgbtn'),'Точно перенести?',async()=>{
+  const to=$('st-mg').value,tp=state.staff.find(x=>x.id===to);if(!tp)return;
+  const nm=[tp.name,tp.surname].filter(Boolean).join(' ');
+  for(const a of state.appts.filter(x=>x.m===ex.id))await Store.saveAppt(a.id,{...a,m:to,mn:nm});
+  for(const x of state.sals.filter(x=>x.sid===ex.id))await Store.saveSalary(x.id,{...x,sid:to});
+  await Store.deleteStaff(ex.id);
+  await syncPeople(state.staff.filter(x=>x.id!==ex.id));
+  closeSheet();toast('Перенесено в «'+nm+'», дубль видалено');
+ });
  if(ex)arm($('st-del'),'Видалити',async()=>{
   await Store.deleteStaff(ex.id);
   if(ex.uid&&ex.uid!==ex.id)await Store.deleteStaff(ex.uid);
