@@ -58,7 +58,7 @@ function renderSettings(force){
  const sv=cfgServices(),ct=cfgCats(),skin=document.documentElement.dataset.skin,mp=lsGet('magnifica-mode','auto');
  const stOrd=byStaffOrder(state.staff);
  const staffRows=stOrd.map((s,i)=>`<div class="strow"><button class="cl" data-staff="${esc(s.id)}"><span class="av">${esc(initials(s.name))}</span>
-  <span class="cl-m"><span class="cl-n">${esc(s.name)}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.owner?' · акаунт власника':s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
+  <span class="cl-m"><span class="cl-n">${esc([s.name,s.surname].filter(Boolean).join(" "))}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.owner?' · акаунт власника':s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
   <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button><span class="mv"><button type="button" data-mv="up:${esc(s.id)}" aria-label="Вище" ${i===0?'disabled':''}>▲</button><button type="button" data-mv="dn:${esc(s.id)}" aria-label="Нижче" ${i===stOrd.length-1?'disabled':''}>▼</button></span></div>`).join('');
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
@@ -101,7 +101,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5i</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5j</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -260,7 +260,8 @@ function openStaff(id){
  const pay=s.pay||{freq:'',amount:0,start:todayKey()},ap=s.autoPay||{};
  const hasLogin=!!(ex&&ex.uid);
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Працівник':'Новий працівник'}</h2>${closeBtn}</div>
-  <label class="lf"><span>Ім’я</span><input id="st-name" value="${esc(s.name)}" maxlength="60" autocomplete="off"></label>
+  <label class="lf"><span>Ім’я (показується в календарі)</span><input id="st-name" value="${esc(s.name)}" maxlength="60" autocomplete="off"></label>
+  <label class="lf"><span>Прізвище (для звітів)</span><input id="st-sur" value="${esc(s.surname||'')}" maxlength="60" autocomplete="off"></label>
   <label class="lf"><span>Посада</span><input id="st-role" value="${esc(s.role||'')}" placeholder="майстер манікюру, адміністратор…" maxlength="60" autocomplete="off"></label>
   <label class="chk"><input type="checkbox" id="st-master" ${s.master?'checked':''}> Майстер: приймає клієнтів (з’являється у виборі в записі)</label>
   <div class="lbl2" style="margin-top:12px">Вхід на сайт</div>
@@ -357,7 +358,7 @@ function openStaff(id){
    const perms={};
    if(uid||hasLogin)document.querySelectorAll('[data-p]').forEach(i=>{if(i.checked)perms[i.dataset.p]=true});
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
-   const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
+   const obj={id:sid,name,surname:$('st-sur').value.trim(),role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
     pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
@@ -388,7 +389,8 @@ function openSelf(ex){
  const uid=state.user.uid,nm0=ex?ex.name:String((state.user.email||'').split('@')[0]||'').replace(/^./,c=>c.toUpperCase());
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Мій профіль майстра':'Я теж майстер'}</h2>${closeBtn}</div>
   <div class="note">Це ваш власний вхід (${esc(state.user.email||'')}). Новий акаунт не створюється: ви лишаєтесь адміністратором з повним доступом, а в записах зʼявляєтесь у виборі майстра, і у вас є вкладка «Мій кабінет».</div>
-  <label class="lf"><span>Ім’я в записах</span><input id="sf-name" value="${esc(nm0)}" maxlength="60" autocomplete="off"></label>
+  <label class="lf"><span>Ім’я (показується в календарі)</span><input id="sf-name" value="${esc(nm0)}" maxlength="60" autocomplete="off"></label>
+  <label class="lf"><span>Прізвище (для звітів)</span><input id="sf-sur" value="${esc(ex?ex.surname||'':'')}" maxlength="60" autocomplete="off"></label>
   <label class="lf"><span>Посада</span><input id="sf-role" value="${esc(ex?ex.role||'':'адміністратор')}" maxlength="60" autocomplete="off"></label>
   <label class="chk"><input type="checkbox" id="sf-master" ${!ex||ex.master?'checked':''}> Майстер: приймаю клієнтів</label>
   <label class="lf"><span>Загальний % від виручки</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
@@ -406,7 +408,7 @@ function openSelf(ex){
   const name=$('sf-name').value.trim();if(!name){err('Вкажіть ім’я.');return}
   err('');const b=$('sf-save');b.disabled=true;b.textContent='Зберігаю…';
   try{
-   const obj={id:uid,name,role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
+   const obj={id:uid,name,surname:$('sf-sur').value.trim(),role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
     pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('sf-bf').value||'',pay:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(uid,obj);
    await syncPeople(state.staff.filter(x=>x.id!==uid).concat([obj]));

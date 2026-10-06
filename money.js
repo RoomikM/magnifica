@@ -72,7 +72,7 @@ function salaryView(D,mk){
   }).join('');
   sched=`<div class="card"><h2>Графік виплат</h2><div class="caption">Що настало до виплати за схемою кожного працівника</div>${cards||'<div class="empty">Працівників ще немає. Додайте їх у налаштуваннях.</div>'}</div>`;
  }
- const rows=pays.length?pays.map(x=>`<button class="exrow" data-sid-pay="${esc(x.id)}"><div><div class="t">${esc(personName(x.sid,x.sn)||'Працівник')}</div><div class="m">${full(x.d)}${x.to?' · за період до '+full(x.to):''}${x.note?' · '+esc(x.note):''}</div></div><div class="a">−${money(x.amount)}</div></button>`).join(''):'<div class="empty">Виплат за цей місяць ще немає.</div>';
+ const rows=pays.length?pays.map(x=>`<button class="exrow" data-sid-pay="${esc(x.id)}"><div><div class="t">${esc(personFull(x.sid,x.sn)||'Працівник')}</div><div class="m">${full(x.d)}${x.to?' · за період до '+full(x.to):''}${x.note?' · '+esc(x.note):''}</div></div><div class="a">−${money(x.amount)}</div></button>`).join(''):'<div class="empty">Виплат за цей місяць ще немає.</div>';
  return `<div class="ex-grid"><div class="card ex-sum"><h2>Виплачено за місяць</h2><div class="caption">Зарплата входить у витрати й зменшує чистий прибуток</div><div class="profit-main">${money(paid)}</div></div>
   <div class="ex-list">${sched}<div class="card"><h2>Виплати</h2><div class="caption">${can('salaryEdit')?'Торкніться запису, щоб змінити або видалити':'Лише перегляд'}</div>${rows}</div></div></div>`;
 }

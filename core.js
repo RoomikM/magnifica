@@ -164,11 +164,15 @@ function personName(id,snap){
  const p=cfgPeople().find(x=>x.id===id)||state.staff.find(x=>x.id===id);
  return p?p.name:(snap||'');
 }
+function personFull(id,snap){
+ const p=cfgPeople().find(x=>x.id===id)||state.staff.find(x=>x.id===id);
+ return p?[p.name,p.surname].filter(Boolean).join(' '):(snap||'');
+}
 const personColor=id=>{const i=cfgPeople().findIndex(x=>x.id===id);return colorOf(i<0?0:i+1)};
 /* список людей для довідника: оновлюється власником при кожній зміні штату */
 function syncPeople(list){
  const c=cfgDoc();
- c.people=(list||state.staff).filter(s=>s.active!==false).map(s=>({id:s.id,name:s.name,master:!!s.master,grps:Array.isArray(s.grps)?s.grps.filter(Boolean):[]}));
+ c.people=(list||state.staff).filter(s=>s.active!==false).map(s=>({id:s.id,name:s.name,surname:s.surname||'',master:!!s.master,grps:Array.isArray(s.grps)?s.grps.filter(Boolean):[]}));
  return saveCfg();
 }
 
@@ -210,7 +214,7 @@ function compute(){
   const r=row(ap.d);
   const f=itemFactor(ap);
   (ap.items||[]).forEach(it=>{r.a[it.sid]=(r.a[it.sid]||0)+(+it.price||0)*f;r.c[it.sid]=(r.c[it.sid]||0)+1});
-  const mk=ap.m||'—';const mr=masterRev.get(mk)||{name:ap.mn||personName(ap.m)||'Без майстра',sum:0,n:0};
+  const mk=ap.m||'—';const mr=masterRev.get(mk)||{name:personFull(ap.m,ap.mn)||'Без майстра',sum:0,n:0};
   mr.sum+=(+ap.total||0);mr.n++;masterRev.set(mk,mr);
  });
  const days=[...map.entries()].map(([k,v])=>{
@@ -303,7 +307,7 @@ function overviewScope(D){
  let best=null;days.forEach(x=>{if(!best||x.total>best.total)best=x});
  const mr=new Map();
  state.appts.filter(a=>counted(a)&&String(a.d).startsWith(mk)).forEach(a=>{
-  const k=a.m||'—',o=mr.get(k)||{name:a.mn||personName(a.m)||'Без майстра',sum:0,n:0};o.sum+=(+a.total||0);o.n++;mr.set(k,o);
+  const k=a.m||'—',o=mr.get(k)||{name:personFull(a.m,a.mn)||'Без майстра',sum:0,n:0};o.sum+=(+a.total||0);o.n++;mr.set(k,o);
  });
  const [y,m]=mk.split('-').map(Number);
  return{S:{total,active:days.length,avg:days.length?total/days.length:0,best,services,from:days.length?days[0].key:null,to:days.length?days[days.length-1].key:null},

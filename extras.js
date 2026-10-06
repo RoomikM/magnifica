@@ -109,7 +109,7 @@ function mastersData(){
  const list=state.appts.filter(a=>inP(a.d));
  const ids=new Map();
  masters().forEach(m=>ids.set(m.id,m.name));
- list.forEach(a=>{const k=a.m||'';if(!ids.has(k))ids.set(k,a.mn||personName(a.m)||'Без майстра')});
+ list.forEach(a=>{const k=a.m||'';if(!ids.has(k))ids.set(k,personFull(a.m,a.mn)||'Без майстра')});
  const rows=[...ids.entries()].map(([id,name])=>{
   const mine=list.filter(a=>(a.m||'')===id),done=mine.filter(counted);
   const rev=done.reduce((t,a)=>t+(+a.total||0),0);
