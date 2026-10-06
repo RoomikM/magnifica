@@ -201,8 +201,11 @@ function openAppt(init){
  };
  const drawX=(open)=>{
   const w=$('p-xw');if(ro){w.innerHTML='';return}
-  w.innerHTML=open?`<div class="xform"><input id="p-xn" autocomplete="off" placeholder="Що ще зробили? напр. зняття гель-лаку" maxlength="60"><input id="p-xp" inputmode="numeric" placeholder="Ціна, ₴" maxlength="7"><button class="btn sm primary" type="button" id="p-xok">Додати</button><button class="btn sm" type="button" id="p-xno">Скасувати</button></div>`
-   :'<button class="btn sm xadd" type="button" id="p-xadd">＋ Додаткова робота (непередбачена)</button>';
+  w.innerHTML=open?`<div class="xform"><div class="xh">Додаткова робота</div>
+   <label class="lf"><span>Що зробили</span><input id="p-xn" autocomplete="off" placeholder="напр. зняття гель-лаку" maxlength="60"></label>
+   <label class="lf"><span>Ціна, ₴</span><input id="p-xp" inputmode="numeric" placeholder="0" maxlength="7"></label>
+   <div class="xbtns"><button class="btn" type="button" id="p-xno">Скасувати</button><button class="btn primary" type="button" id="p-xok">Додати</button></div></div>`
+   :'<button class="xadd" type="button" id="p-xadd"><b>＋</b> Додаткова робота<small>клієнт попросив ще</small></button>';
   if(open){digitsOnly($('p-xp'));$('p-xn').focus()}
  };
  const syncDur=()=>{

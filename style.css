@@ -613,7 +613,14 @@ html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1
 .balbox>div{background:var(--card-2,rgba(127,127,127,.1));border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .balbox span{font-size:11px;opacity:.7}.balbox b{font-size:15px}
 .balbox .pos b{color:var(--accent)}.balbox .neg b{color:#d94c4c}
-.xwrap{margin:6px 0 2px}.xform{display:flex;flex-wrap:wrap;gap:6px}.xform #p-xn{flex:1 1 100%}.xform #p-xp{flex:1 1 90px}
-.xform input{min-width:0}.xform .btn{grid-column:auto}
+.xwrap{margin:2px 0 12px}
+.xadd{white-space:nowrap;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;font-size:14px;font-weight:750;color:var(--text);background:transparent;border:1.5px dashed var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.xadd b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:16px;flex:none}
+.xadd small{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted);text-align:right}
+.xadd:hover{border-color:var(--accent)}
+.xform{background:var(--card-solid);border:1px solid var(--line);border-radius:14px;padding:12px 12px 4px}
+.xform .xh{font-size:13px;font-weight:800;margin-bottom:10px}
+.xform .lf input{background:var(--bg)}
+.xbtns{display:flex;gap:8px;justify-content:flex-end;margin:2px 0 8px}
 .xtag{font-size:10px;opacity:.65;margin-left:4px}
 @media(max-width:480px){.balbox{grid-template-columns:1fr}}
