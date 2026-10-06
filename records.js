@@ -29,17 +29,17 @@ function trange(lists){
  return [Math.max(0,sh),Math.min(24,eh)];
 }
 function gutter(sh,eh,hpx){let h='';for(let x=sh;x<=eh;x++)h+=`<div class="tl-hr" style="top:${(x-sh)*hpx}px">${pad(x)}:00</div>`;return `<div class="tl-hours" style="height:${(eh-sh)*hpx}px">${h}</div>`}
-function evHtml(a,compact,pos){
+function evHtml(a,compact,pos,inCol){
  const nm=a.name||a.phone||'Без імені';
  const fut=!counted(a)&&isOk(a);
- const sub=(mName(a)?mName(a)+' · ':'')+itemsText(a);
+ const sub=(!inCol&&mName(a)?mName(a)+' · ':'')+itemsText(a);
  return `<button class="ev ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="${pos||''}--ec:${firstColor(a)}"><b>${esc(a.t)}</b>${compact?'':'<span class="p">'+money(a.total||0)+'</span>'}<span class="n">${esc(nm)}${STATUS_TXT[a.st]&&!compact?' · '+STATUS_TXT[a.st]:''}</span><span class="s">${esc(sub)}</span></button>`;
 }
 function tlCol(d,list,sh,eh,hpx,compact,mid){
  let lines='';for(let x=0;x<=eh-sh;x++)lines+=`<i class="tl-line" style="top:${x*hpx}px"></i>`;
  const evs=lanes(list).map(c=>{
   const top=(c.s-sh*60)/60*hpx,h=Math.max(30,(c.e-c.s)/60*hpx-2);
-  return evHtml(c.a,compact,`top:${top}px;height:${h}px;left:calc(${c.lane/c.n*100}% + 2px);width:calc(${100/c.n}% - 4px);`);
+  return evHtml(c.a,compact,`top:${top}px;height:${h}px;left:calc(${c.lane/c.n*100}% + 2px);width:calc(${100/c.n}% - 4px);`,mid!=null);
  }).join('');
  let now='';
  if(d===todayKey()){const m=nowMin();if(m>=sh*60&&m<=eh*60)now=`<i class="tl-now" style="top:${(m-sh*60)/60*hpx}px"></i>`}
@@ -61,7 +61,7 @@ function masterDay(date,cols,sh,eh,hpx){
  const head=sm
   ?c=>`<div class="mc-h" title="${esc(c.name)}"><i class="av">${esc(sInit(c.name))}</i><span><em>${activeN(c.list)}</em></span></div>`
   :c=>`<div class="mc-h"><i class="av">${esc(initials(c.name))}</i><b>${esc(c.name)}</b><span><em>${activeN(c.list)}</em> зап.${activeSum(c.list)?' · '+money(activeSum(c.list)):''}</span></div>`;
- const bar=isMobile()?`<div class="mc-bar"><button class="btn sm" type="button" data-mcw>${sm?'⤢ Розгорнути календар':'⤡ Стиснути календар'}</button></div>`:'';
+ const bar=(isMobile()||isOwner())?`<div class="mc-bar">${isOwner()?'<button class="btn sm" type="button" data-mord>⇅ Порядок майстрів</button>':''}${isMobile()?`<button class="btn sm" type="button" data-mcw>${sm?'⤢ Розгорнути календар':'⤡ Стиснути календар'}</button>`:''}</div>`:'';
  return bar+`<div class="mc ${sm?'mc-s':''}"><div class="mc-in"><div class="mc-g"><div class="mc-gh"></div>${gutter(sh,eh,hpx)}</div>${cols.map(c=>`<div class="mc-c">${head(c)}${tlCol(date,c.list,sh,eh,hpx,true,c.id)}</div>`).join('')}</div></div>`;
 }
 function agenda(list,empty){
@@ -406,4 +406,16 @@ async function subAdjust(cid,delta){
  const c=state.clients.find(x=>x.id===cid);if(!c||!c.sub)return;
  const n={...c,sub:{...c.sub,left:Math.max(0,Math.min(+c.sub.visits||99,(+c.sub.left||0)+delta))}};
  try{await Store.saveClient(c.id,n)}catch(e){}
+}
+
+function mordSheet(){
+ const ms=masters();
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Порядок майстрів</h2>${closeBtn}</div><div class="mord">${ms.map((m,i)=>`<div class="strow"><span class="nm">${esc(m.name)}</span><button class="btn sm" type="button" data-mo="up:${esc(m.id)}" ${i?'':'disabled'} aria-label="Вгору">▲</button><button class="btn sm" type="button" data-mo="dn:${esc(m.id)}" ${i<ms.length-1?'':'disabled'} aria-label="Вниз">▼</button></div>`).join('')}</div>`);
+}
+function mordMove(v){
+ const[dir,id]=v.split(':'),ms=masters().map(m=>m.id),i=ms.indexOf(id),j=dir==='up'?i-1:i+1;
+ if(i<0||j<0||j>=ms.length)return;
+ [ms[i],ms[j]]=[ms[j],ms[i]];
+ const rest=byStaffOrder(state.staff).map(x=>x.id).filter(x=>!ms.includes(x));
+ cfgDoc().staffOrder=ms.concat(rest);saveCfg();renderAll();mordSheet();
 }

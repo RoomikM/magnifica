@@ -29,11 +29,14 @@ const goHome=()=>{const t=[...(isOwner()?[]:['cabinet']),'overview','records','c
 $('brandHome').addEventListener('click',goHome);
 $('brandHome').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}});
 
+/* ---------- порядок майстрів ---------- */
+$('sheetPanel').addEventListener('click',e=>{const b=e.target.closest('[data-mo]');if(b&&!b.disabled)mordMove(b.dataset.mo)});
 /* ---------- записи ---------- */
 $('records').addEventListener('click',e=>{
  const u=state.ui,t=e.target;let b;
  if((b=t.closest('[data-v]'))){u.aview=b.dataset.v;lsSet('magnifica-aview',u.aview);renderRecords();return}
  if((b=t.closest('[data-f]'))){u.afilter=b.dataset.f;renderRecords();return}
+ if(t.closest('[data-mord]')){mordSheet();return}
  if((b=t.closest('[data-mcw]'))){state.ui.mwide=!state.ui.mwide;renderRecords();return}
  if((b=t.closest('[data-nav]'))){
   const n=b.dataset.nav;

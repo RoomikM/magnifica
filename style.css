@@ -569,7 +569,7 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 .kick-row .btn{opacity:.85}
 html.nophone .ph-f{display:none!important}
 
-.mc{overflow-x:auto;margin:0 -2px;-webkit-overflow-scrolling:touch}
+.mc{overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;margin:0 -2px;-webkit-overflow-scrolling:touch}
 .mc-in{display:flex;min-width:100%}
 .mc-g{flex:0 0 42px;position:sticky;left:0;z-index:3;background:var(--card-solid)}
 .mc-gh{height:68px}
@@ -626,7 +626,8 @@ html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1
 @media(max-width:480px){.balbox{grid-template-columns:1fr}}
 
 /* записи по майстрах: стислий вигляд на телефоні */
-.mc-bar{display:flex;justify-content:flex-end;margin:0 0 8px}
+.mc-bar{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.mord .strow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}.mord .nm{flex:1;font-weight:700}
 .mc-s .mc-g{flex-basis:30px}
 .mc-s .mc-g .tl-hr{font-size:9px}
 .mc-s .mc-c{flex:1 1 0;min-width:0}
@@ -694,3 +695,5 @@ html.rep-open body{overflow:hidden}
 .strow .mv{display:flex;flex-direction:column;gap:4px;justify-content:center}
 .strow .mv button{width:34px;height:26px;border-radius:9px;border:1px solid var(--line);background:var(--btn-bg);color:var(--text);font-size:11px;line-height:1;cursor:pointer;padding:0}
 .strow .mv button:disabled{opacity:.3;cursor:default}
+
+.mc:not(.mc-s) .ev .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.25}
