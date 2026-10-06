@@ -223,7 +223,15 @@ function resetData(){
 document.addEventListener('click',e=>{const b=e.target.closest('.skin-dot');if(b)setSkin(b.dataset.skin)});
 setSkin(document.documentElement.getAttribute('data-skin')||'night');
 setNavH();addEventListener('resize',()=>{applyMode();setNavH()});
-setTab('overview');
+/* пам'ятаємо, де людина зупинилась: вкладка, період огляду, вигляд календаря, фільтри */
+{
+ const UIK=['range','mwide','afilter','exsub','cmode','cflt','csort'];
+ try{const sv=JSON.parse(lsGet('magnifica-ui','{}'));UIK.forEach(k=>{if(sv[k]!==undefined)state.ui[k]=sv[k]})}catch(e){}
+ const save=()=>{const o={tab:state.tab};UIK.forEach(k=>o[k]=state.ui[k]);lsSet('magnifica-ui',JSON.stringify(o))};
+ document.addEventListener('click',()=>setTimeout(save,0),true);
+ window.saveUiState=save;
+}
+{let t='overview';try{t=JSON.parse(lsGet('magnifica-ui','{}')).tab||'overview'}catch(e){}if(!TITLES[t])t='overview';setTab(t)}
 addEventListener('error',e=>{
  if(state.status==='loading'){state.status='error';state.errMsg=String(e.message||e);renderAll()}
 });
