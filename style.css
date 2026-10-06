@@ -698,3 +698,5 @@ html.rep-open body{overflow:hidden}
 .strow .mv button:disabled{opacity:.3;cursor:default}
 
 .mc:not(.mc-s) .ev .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.25}
+
+.ev.ic .n{display:none}.ev.ic .s{color:var(--text);font-weight:600}.ev.cancel.ic .s{text-decoration:line-through}

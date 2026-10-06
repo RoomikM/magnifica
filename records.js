@@ -33,7 +33,7 @@ function evHtml(a,compact,pos,inCol){
  const nm=a.name||a.phone||'Без імені';
  const fut=!counted(a)&&isOk(a);
  const sub=(!inCol&&mName(a)?mName(a)+' · ':'')+itemsText(a);
- return `<button class="ev ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="${pos||''}--ec:${firstColor(a)}"><b>${esc(a.t)}</b>${compact?'':'<span class="p">'+money(a.total||0)+'</span>'}<span class="n">${esc(nm)}${STATUS_TXT[a.st]&&!compact?' · '+STATUS_TXT[a.st]:''}</span><span class="s">${esc(sub)}</span></button>`;
+ return `<button class="ev ${inCol?'ic':''} ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="${pos||''}--ec:${firstColor(a)}"><b>${esc(a.t)}</b>${compact?'':'<span class="p">'+money(a.total||0)+'</span>'}<span class="n">${esc(nm)}${STATUS_TXT[a.st]&&!compact?' · '+STATUS_TXT[a.st]:''}</span><span class="s">${esc(sub)}</span></button>`;
 }
 function tlCol(d,list,sh,eh,hpx,compact,mid){
  let lines='';for(let x=0;x<=eh-sh;x++)lines+=`<i class="tl-line" style="top:${x*hpx}px"></i>`;
