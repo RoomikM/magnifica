@@ -700,3 +700,10 @@ html.rep-open body{overflow:hidden}
 .mc:not(.mc-s) .ev .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.25}
 
 .ev.ic .n{display:none}.ev.ic .s{color:var(--text);font-weight:600}.ev.cancel.ic .s{text-decoration:line-through}
+
+.ptitle{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pmonth{font-size:20px;font-weight:800;letter-spacing:-.01em;color:var(--text);line-height:1.15}
+.pswipe{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 0 8px;font-size:11px;color:var(--muted)}
+#overview.swl{animation:swl .22s ease-out}#overview.swr{animation:swr .22s ease-out}
+@keyframes swl{from{opacity:.3;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes swr{from{opacity:.3;transform:translateX(-26px)}to{opacity:1;transform:none}}

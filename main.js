@@ -24,6 +24,23 @@ $('profit').addEventListener('click',e=>{
  }
 });
 
+/* перемикання місяців свайпом по сторінці «Огляд» (режим «Місяць») */
+{
+ const ov=$('overview');let sx=0,sy=0,t0=0,ok=false;
+ const shift=n=>{
+  const[y,m]=(state.ui.pmonth||todayKey().slice(0,7)).split('-').map(Number),dt=new Date(Date.UTC(y,m-1+n,1));
+  state.ui.pmonth=dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1);renderAll();
+  ov.classList.remove('swl','swr');void ov.offsetWidth;ov.classList.add(n>0?'swl':'swr');
+ };
+ ov.addEventListener('touchstart',e=>{
+  ok=state.ui.range==='month'&&e.touches.length===1&&!e.target.closest('input,select,textarea,.seg,[data-noswipe]');
+  if(ok){sx=e.touches[0].clientX;sy=e.touches[0].clientY;t0=Date.now()}
+ },{passive:true});
+ ov.addEventListener('touchend',e=>{
+  if(!ok)return;ok=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6&&Date.now()-t0<900)shift(dx<0?1:-1);
+ },{passive:true});
+}
 /* логотип → головна */
 const goHome=()=>{const t=[...(isOwner()?[]:['cabinet']),'overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
 $('brandHome').addEventListener('click',goHome);
