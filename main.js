@@ -179,7 +179,7 @@ addEventListener('error',e=>{
  const upd=k=>v=>{if(k==='appts')v=stripPhones('a',v);else if(k==='clients')v=stripPhones('c',v);else if(k==='wait')v=stripPhones('w',v);state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
  function startData(me,uid){
   const staff=!!me&&!me.owner;
-  state.me=me;state.role=staff?'staff':'owner';state.perms=staff?(me.perms||{}):{};
+  state.me=me&&me.link?{...me,id:me.link}:me;state.role=staff?'staff':'owner';state.perms=staff?(me.perms||{}):{};
   stopData();
   if(staff&&me.active===false){state.status='denied';renderAll();return}
   const stats=can('stats');
@@ -188,10 +188,10 @@ addEventListener('error',e=>{
   unsubData=Store.subscribe({
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
-   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:l=>{state.salsOk=true;upd('sals')(l)},clients:upd('clients'),staff:upd('staff'),
+   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:l=>{state.salsOk=true;upd('sals')(l)},clients:upd('clients'),staff:l=>upd('staff')(l.filter(x=>!x.link)),
    cfg:c=>{state.cfg=c;if(checkKick())return;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
-  },{perms:staff?state.perms:null,uid});
+  },{perms:staff?state.perms:null,uid,mid:me&&me.link||uid});
   if(staff&&!stats){state.status='ready';renderAll()}
   logLogin();autoPrune();
  }

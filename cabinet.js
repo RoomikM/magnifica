@@ -5,7 +5,7 @@ Object.assign(state.ui,{cmode:'month',cmonth:todayKey().slice(0,7)});
 const WD_SHORT=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
 
 function cabinetData(){
- const u=state.ui,me=myUid(),inP=d=>u.cmode==='all'||String(d).startsWith(u.cmonth);
+ const u=state.ui,me=myMid(),inP=d=>u.cmode==='all'||String(d).startsWith(u.cmonth);
  const mine=state.appts.filter(a=>a.m===me);
  const list=mine.filter(a=>inP(a.d)),done=list.filter(counted);
  const rev=done.reduce((t,a)=>t+(+a.total||0),0);

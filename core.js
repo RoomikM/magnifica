@@ -94,6 +94,7 @@ function canTab(t){
  return false;
 }
 const hasFin=()=>can('stats')&&can('expView')&&can('salaryView');
+const myMid=()=>(state.me&&state.me.link)||myUid();
 const myUid=()=>state.user?state.user.uid:'';
 
 /* ---------- налаштування: послуги, категорії, люди ---------- */

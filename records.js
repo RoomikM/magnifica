@@ -139,7 +139,7 @@ function freqServices(svs){
 }
 function defaultMaster(){
  const ms=masters();
- if(!isOwner()&&state.perms.apptOwn&&!state.perms.apptView)return myUid();
+ if(!isOwner()&&state.perms.apptOwn&&!state.perms.apptView)return myMid();
  const last=lsGet('magnifica-lastm','');
  if(last&&ms.some(m=>m.id===last))return last;
  if(ms.length===1)return ms[0].id;

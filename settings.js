@@ -10,6 +10,7 @@ service cloud.firestore {
     function owner() { return request.auth != null && request.auth.uid in ['${uid}', 'UID_ДРУГОГО_ВЛАСНИКА']; }
     function signed() { return request.auth != null; }
     function myDoc() { return /databases/$(database)/documents/staff/$(request.auth.uid); }
+    function mid() { return get(myDoc()).data.get('link', request.auth.uid); }
     function staffOk() { return signed() && exists(myDoc()) && get(myDoc()).data.active == true; }
     function can(p) { return owner() || (staffOk() && get(myDoc()).data.perms.get(p, false) == true); }
     function ownOnly() { return !owner() && can('apptOwn') && !can('apptView'); }
@@ -27,10 +28,10 @@ service cloud.firestore {
       allow write: if owner();
     }
     match /appointments/{id} {
-      allow read: if can('apptView') || can('stats') || (can('apptOwn') && resource.data.m == request.auth.uid);
-      allow create: if can('apptAdd') && (!ownOnly() || request.resource.data.m == request.auth.uid);
-      allow update: if can('apptEdit') && (!ownOnly() || (resource.data.m == request.auth.uid && request.resource.data.m == request.auth.uid));
-      allow delete: if can('apptDel') && (!ownOnly() || resource.data.m == request.auth.uid);
+      allow read: if can('apptView') || can('stats') || (can('apptOwn') && resource.data.m == mid());
+      allow create: if can('apptAdd') && (!ownOnly() || request.resource.data.m == mid());
+      allow update: if can('apptEdit') && (!ownOnly() || (resource.data.m == mid() && request.resource.data.m == mid()));
+      allow delete: if can('apptDel') && (!ownOnly() || resource.data.m == mid());
     }
     match /clients/{id} {
       allow read: if can('clientsView') || can('apptAdd') || can('apptEdit');
@@ -43,7 +44,7 @@ service cloud.firestore {
       allow write: if can('expEdit');
     }
     match /salaries/{id} {
-      allow read: if can('salaryView');
+      allow read: if can('salaryView') || (staffOk() && resource.data.sid == mid());
       allow write: if can('salaryEdit');
     }
   }
@@ -101,7 +102,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5j</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5k</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -160,7 +161,7 @@ async function normalizeGroups(){
  for(const st of state.staff){
   if(!st.pcts)continue;let ch=false;
   Object.keys(map).forEach(o=>{if(st.pcts[o]!=null){st.pcts[map[o]]=st.pcts[o];delete st.pcts[o];ch=true}});
-  if(ch)try{await Store.saveStaff(st.id,st)}catch(e){}
+  if(ch)try{await saveStaffFull(st)}catch(e){}
  }
 }
 function openNewService(){
@@ -321,7 +322,7 @@ function openStaff(id){
    b.disabled=true;msg.textContent='Змінюю…';
    try{
     await Store.changePassword(ex.email,op,np);
-    const upd={...ex,pw:np};await Store.saveStaff(ex.id,upd);Object.assign(ex,upd);
+    const upd={...ex,pw:np};await saveStaffFull(upd);Object.assign(ex,upd);
     msg.textContent='';closeSheet();
     copyText(accessText(upd),'Пароль змінено. Новий доступ скопійовано.','Пароль змінено. Відкрийте картку й скопіюйте доступ.');
    }catch(e){
@@ -333,6 +334,7 @@ function openStaff(id){
  }
  if(ex)arm($('st-del'),'Видалити',async()=>{
   await Store.deleteStaff(ex.id);
+  if(ex.uid&&ex.uid!==ex.id)await Store.deleteStaff(ex.uid);
   await syncPeople(state.staff.filter(x=>x.id!==ex.id));
   closeSheet();toast('Працівника видалено'+(ex.uid?'. Доступ закрито; обліковий запис за потреби видаліть у Firebase → Authentication.':''));
  });
@@ -352,8 +354,8 @@ function openStaff(id){
   try{
    let uid=ex?ex.uid||'':'';
    let sid=ex?ex.id:'';
-   if(wantLogin){uid=await Store.createUser(email,pass);sid=uid}
-   const oldId=ex&&sid!==ex.id?ex.id:'';
+   if(wantLogin)uid=await Store.createUser(email,pass);
+   if(wantLogin&&!ex)sid=uid;
    if(!sid)sid=newId();
    const perms={};
    if(uid||hasLogin)document.querySelectorAll('[data-p]').forEach(i=>{if(i.checked)perms[i.dataset.p]=true});
@@ -361,16 +363,8 @@ function openStaff(id){
    const obj={id:sid,name,surname:$('st-sur').value.trim(),role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
     pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
-   await Store.saveStaff(obj.id,obj);
-   if(oldId){
-    /* картка отримала логін → id став uid: переносимо записи й виплати, старий дубль видаляємо */
-    for(const a of state.appts.filter(x=>x.m===oldId))await Store.saveAppt(a.id,{...a,m:sid});
-    for(const x of state.sals.filter(x=>x.sid===oldId))await Store.saveSalary(x.id,{...x,sid});
-    const so=(state.cfg&&state.cfg.staffOrder)||[];
-    if(so.includes(oldId))cfgDoc().staffOrder=so.map(i=>i===oldId?sid:i);
-    await Store.deleteStaff(oldId);
-   }
-   const next=state.staff.filter(x=>x.id!==obj.id&&x.id!==oldId).concat([obj]);
+   await saveStaffFull(obj);
+   const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
    closeSheet();
    if(wantLogin){copyText(accessText(obj),'Працівника створено. Доступ скопійовано в буфер.','Працівника створено. Відкрийте картку й натисніть «Скопіювати доступ».')}
@@ -551,4 +545,11 @@ function initSettings(){
   if(t.closest('#logout')){Store.signOut();return}
  });
  $('impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f)});
+}
+
+/* картка майстра зберігає свій id назавжди (до нього прив'язані записи й виплати).
+   Для входу окремо пишемо службовий документ staff/<uid> з посиланням link на картку: за ним працюють правила й кабінет. */
+async function saveStaffFull(o){
+ await Store.saveStaff(o.id,o);
+ if(o.uid&&o.uid!==o.id)await Store.saveStaff(o.uid,{...o,id:o.uid,link:o.id,pw:''});
 }
