@@ -45,8 +45,8 @@ function repChart(R,fin){
  const step=Math.max(1,Math.ceil(n/(R.all?14:16)));
  items.forEach((it,i)=>{
   const cx=pd.l+gw*i+gw/2;
-  if(two){s+=`<rect x="${cx-bw-1}" y="${y(it.rev)}" width="${bw}" height="${H-pd.b-y(it.rev)}" rx="3" fill="#3b6e8f"/><rect x="${cx+1}" y="${y(it.exp)}" width="${bw}" height="${H-pd.b-y(it.exp)}" rx="3" fill="#d9a05b"/>`}
-  else s+=`<rect x="${cx-bw/2}" y="${y(it.rev)}" width="${bw}" height="${Math.max(0,H-pd.b-y(it.rev))}" rx="3" fill="#3b6e8f"/>`;
+  if(two){s+=`<rect x="${cx-bw-1}" y="${y(it.rev)}" width="${bw}" height="${H-pd.b-y(it.rev)}" rx="3" fill="#3b6e8f"><title>${esc(it.l)}: виручка ${money(it.rev)}</title></rect><rect x="${cx+1}" y="${y(it.exp)}" width="${bw}" height="${H-pd.b-y(it.exp)}" rx="3" fill="#d9a05b"><title>${esc(it.l)}: витрати ${money(it.exp)}</title></rect>`}
+  else s+=`<rect x="${cx-bw/2}" y="${y(it.rev)}" width="${bw}" height="${Math.max(0,H-pd.b-y(it.rev))}" rx="3" fill="#3b6e8f"><title>${esc(it.l)}: ${money(it.rev)}</title></rect>`;
   if(i%step===0)s+=`<text x="${cx}" y="${H-12}" text-anchor="middle" font-size="10" fill="#7b8794">${esc(it.l)}</text>`;
  });
  return s+'</svg>'+(two?'<div class="rp-leg"><span><i style="background:#3b6e8f"></i>Виручка</span><span><i style="background:#d9a05b"></i>Витрати і зарплата</span></div>':'');
@@ -90,16 +90,32 @@ function reportCardHtml(){
   <p class="set-p">Гарний звіт для показу покупцям або партнерам: виручка, структура доходу, витрати, прибуток. Без імен клієнтів і майстрів. Можна зберегти у PDF або надрукувати.</p>
   <label class="lf"><span>Період</span><select id="repPer"><option value="all">Усі періоди</option>${ms.map(k=>`<option value="${k}">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</option>`).join('')}</select></label>
   <label class="chk"><input type="checkbox" id="repFin" checked> Показувати витрати, зарплату і прибуток</label>
-  <div style="margin-top:10px"><button class="btn sm primary" id="repGo">Сформувати звіт</button></div></div>`;
+  <div style="margin-top:10px"><button class="btn sm primary" id="repGo">Сформувати звіт</button> <button class="btn sm" id="repHtml0">Зберегти як HTML-файл</button></div></div>`;
 }
 function openReport(sel,fin){
  let ov=$('rep');if(ov)ov.remove();
  ov=document.createElement('div');ov.id='rep';ov.className='rep';
- ov.innerHTML=`<div class="rep-bar"><button class="btn sm" id="repClose">← Закрити</button><div class="rep-sel"><select id="repPer2">${[...document.querySelectorAll('#repPer option')].map(o=>`<option value="${o.value}" ${o.value===sel?'selected':''}>${esc(o.textContent)}</option>`).join('')}</select><label class="chk"><input type="checkbox" id="repFin2" ${fin?'checked':''}> витрати і прибуток</label></div><button class="btn sm primary" id="repPrint">Друк / PDF</button></div><div class="rep-body" id="repBody">${reportHtml(sel,fin)}</div>`;
+ ov.innerHTML=`<div class="rep-bar"><button class="btn sm" id="repClose">← Закрити</button><div class="rep-sel"><select id="repPer2">${[...document.querySelectorAll('#repPer option')].map(o=>`<option value="${o.value}" ${o.value===sel?'selected':''}>${esc(o.textContent)}</option>`).join('')}</select><label class="chk"><input type="checkbox" id="repFin2" ${fin?'checked':''}> витрати і прибуток</label></div><div style="display:flex;gap:8px"><button class="btn sm" id="repHtml">Зберегти HTML</button><button class="btn sm primary" id="repPrint">Друк / PDF</button></div></div><div class="rep-body" id="repBody">${reportHtml(sel,fin)}</div>`;
  document.body.appendChild(ov);document.documentElement.classList.add('rep-open');
  const re=()=>{$('repBody').innerHTML=reportHtml($('repPer2').value,$('repFin2').checked)};
  $('repPer2').addEventListener('change',re);$('repFin2').addEventListener('change',re);
  $('repClose').addEventListener('click',()=>{ov.remove();document.documentElement.classList.remove('rep-open')});
  $('repPrint').addEventListener('click',()=>window.print());
 }
-document.addEventListener('click',e=>{if(e.target.closest('#repGo'))openReport($('repPer').value,$('repFin').checked)});
+/* автономний інтерактивний HTML: усі періоди вшиті у файл, працює без інтернету і сайту */
+async function exportReportHtml(){
+ const opts=[...document.querySelectorAll('#repPer option')].map(o=>[o.value,o.textContent]);
+ if(!opts.length)return;
+ let css='';try{const t=await (await fetch('style.css',{cache:'no-cache'})).text();css=t.slice(t.indexOf('/* звіт для рієлтора'))}catch(e){toast('Не вдалось зібрати файл. Перевірте з’єднання.');return}
+ const cur=$('repPer2')?$('repPer2').value:$('repPer').value,fin=$('repFin2')?$('repFin2').checked:$('repFin').checked;
+ const data={};opts.forEach(([v])=>{data[v+'|1']=reportHtml(v,true);data[v+'|0']=reportHtml(v,false)});
+ const js=`const D=${JSON.stringify(data).replace(/</g,'\\u003c')};const $=id=>document.getElementById(id);
+const up=()=>{$('repBody').innerHTML=D[$('repPer2').value+'|'+($('repFin2').checked?'1':'0')]};
+$('repPer2').addEventListener('change',up);$('repFin2').addEventListener('change',up);$('repPrint').addEventListener('click',()=>window.print());up();`;
+ const doc=`<!doctype html><html lang="uk" class="rep-open"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MAGNiFICA · Звіт</title><style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}.btn{font:inherit;font-size:13px;font-weight:700;padding:8px 12px;border-radius:10px;border:1px solid;cursor:pointer}.chk{display:inline-flex;gap:6px;align-items:center;font-size:13px}${css}</style></head><body><div class="rep" id="rep"><div class="rep-bar"><div class="rep-sel"><b style="letter-spacing:.2em;font-weight:400">MAGNiFICA</b><select id="repPer2">${opts.map(([v,n])=>`<option value="${v}" ${v===cur?'selected':''}>${esc(n)}</option>`).join('')}</select><label class="chk"><input type="checkbox" id="repFin2" ${fin?'checked':''}> витрати і прибуток</label></div><button class="btn primary" id="repPrint">Друк / PDF</button></div><div class="rep-body" id="repBody"></div></div><script>${js}<\/script></body></html>`;
+ saveFile('magnifica-zvit-'+todayKey()+'.html',doc,'text/html');
+}
+document.addEventListener('click',e=>{
+ if(e.target.closest('#repGo'))openReport($('repPer').value,$('repFin').checked);
+ else if(e.target.closest('#repHtml')||e.target.closest('#repHtml0'))exportReportHtml();
+});
