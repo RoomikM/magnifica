@@ -193,10 +193,12 @@ function openAppt(init){
  };
  const err=m=>{const e=$('p-err');e.textContent=m;e.hidden=!m};
  const drawChips=()=>{
-  const shown=freq.slice();
-  a.items.forEach(i=>{const s=svs.find(x=>x.id===i.sid);if(s&&!shown.includes(s))shown.push(s)});
-  $('p-chips').innerHTML=shown.map(s=>`<button class="chip" type="button" data-sid="${esc(s.id)}" aria-pressed="${a.items.some(i=>i.sid===s.id)}">${esc(s.name)}<small>${s.price?fmt(s.price)+' ₴':'—'}</small></button>`).join('')||'<span class="hint" style="margin:0">Додайте послуги в налаштуваннях (шестерня).</span>';
-  const rest=svs.filter(s=>!shown.includes(s)&&!a.items.some(i=>i.sid===s.id));
+  const mid=$('p-m')?$('p-m').value:(a.m||'');
+  const avail=svs.filter(s=>svAllowed(mid,s)||a.items.some(i=>i.sid===s.id));
+  const shown=freqServices(avail);
+  a.items.forEach(i=>{const s=avail.find(x=>x.id===i.sid);if(s&&!shown.includes(s))shown.push(s)});
+  $('p-chips').innerHTML=shown.map(s=>`<button class="chip" type="button" data-sid="${esc(s.id)}" aria-pressed="${a.items.some(i=>i.sid===s.id)}">${esc(s.name)}<small>${s.price?fmt(s.price)+' ₴':'—'}</small></button>`).join('')||(svs.length?'<span class="hint" style="margin:0">За цим майстром не закріплено жодної роботи.</span>':'<span class="hint" style="margin:0">Додайте послуги в налаштуваннях (шестерня).</span>');
+  const rest=avail.filter(s=>!shown.includes(s)&&!a.items.some(i=>i.sid===s.id));
   const more=$('p-more');
   more.hidden=!rest.length;
   more.innerHTML='<option value="">＋ Інша робота…</option>'+rest.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.price?' — '+fmt(s.price)+' ₴':''}</option>`).join('');
@@ -341,7 +343,7 @@ function openAppt(init){
  });
  $('p-d').addEventListener('change',drawSlots);
  $('p-dur').addEventListener('change',()=>{a.durManual=true;drawSlots()});
- if($('p-m'))$('p-m').addEventListener('change',drawSlots);
+ if($('p-m'))$('p-m').addEventListener('change',()=>{drawSlots();drawChips()});
  drawSlots();
 
  if(ro){

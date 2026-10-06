@@ -682,3 +682,4 @@ html.rep-open body{overflow:hidden}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
  @page{margin:14mm}
 }
+.grppick{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:6px}

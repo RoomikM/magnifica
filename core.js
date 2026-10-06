@@ -100,6 +100,8 @@ const myUid=()=>state.user?state.user.uid:'';
 const cfgServices=()=>(state.cfg&&state.cfg.services)||DEFAULT_SERVICES;
 const cfgCats=()=>(state.cfg&&state.cfg.expCats)||DEFAULT_CATS;
 const cfgPeople=()=>(state.cfg&&state.cfg.people)||[];
+/* блоки робіт, закріплені за майстром (порожньо = усі) */
+const svAllowed=(mid,s)=>{const p=cfgPeople().find(x=>x.id===mid),g=p&&p.grps;return !mid||!g||!g.length||g.includes(grpKeyOfSv(s))};
 const masters=()=>cfgPeople().filter(p=>p.master);
 function cfgDoc(){
  if(!state.cfg)state.cfg={};
@@ -164,7 +166,7 @@ const personColor=id=>{const i=cfgPeople().findIndex(x=>x.id===id);return colorO
 /* список людей для довідника: оновлюється власником при кожній зміні штату */
 function syncPeople(list){
  const c=cfgDoc();
- c.people=(list||state.staff).filter(s=>s.active!==false).map(s=>({id:s.id,name:s.name,master:!!s.master}));
+ c.people=(list||state.staff).filter(s=>s.active!==false).map(s=>({id:s.id,name:s.name,master:!!s.master,grps:Array.isArray(s.grps)?s.grps.filter(Boolean):[]}));
  return saveCfg();
 }
 

@@ -100,7 +100,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4x</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4y</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -220,6 +220,17 @@ function pctsHtml(st){
   <div class="hint" style="margin:6px 0 8px">Коли вписуєте загальний %, він сам ставиться на всі роботи. Потім можна змінити % будь-якій роботі чи групі окремо. Можна поставити 0. Відсоток послуги сильніший за відсоток групи.</div>
   ${body}</details>`;
 }
+/* блоки робіт, закріплені за майстром */
+function grpPickHtml(st){
+ const sv=svList().filter(x=>!x.archived),seen=new Map();
+ sv.forEach(x=>{const k=grpKeyOfSv(x);if(!seen.has(k))seen.set(k,x.group||x.name)});
+ if(!seen.size)return '';
+ const sel=new Set((st&&st.grps)||[]);
+ return `<div class="lbl2" style="margin-top:12px">Закріплені блоки робіт</div>
+  <div class="hint" style="margin:0 0 6px">Нічого не вибрано — у записі майстру доступні всі роботи. Вибрано один блок чи кілька — лише вони.</div>
+  <div class="grppick">${[...seen.entries()].map(([k,n])=>`<label class="chk"><input type="checkbox" data-pg="${esc(k)}" ${sel.has(k)?'checked':''}> ${esc(n)}</label>`).join('')}</div>`;
+}
+const readGrps=()=>[...document.querySelectorAll('[data-pg]')].filter(i=>i.checked).map(i=>i.dataset.pg);
 function readPcts(){
  const o={};
  document.querySelectorAll('[data-spct]').forEach(i=>{const v=i.value.replace(/\D/g,'');if(v!=='')o[i.dataset.spct]=Math.min(100,+v)});
@@ -272,6 +283,7 @@ function openStaff(id){
    <label class="lf"><span>Рахувати з</span><input id="st-start" type="date" value="${esc(pay.start||todayKey())}"></label></div>
   <label class="lf"><span>Загальний % від виручки майстра</span><input id="st-pct" inputmode="numeric" value="${s.pct||''}" placeholder="0"></label>
   ${pctsHtml(s)}
+  ${grpPickHtml(s)}
   <div class="lbl2" style="margin-top:12px">Авто-виплата % (залишок за балансом)</div>
   <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf"><span>Як часто</span><select id="st-af"><option value="">вимкнено</option><option value="day" ${ap.freq==='day'?'selected':''}>щодня</option><option value="week" ${ap.freq==='week'?'selected':''}>щотижня</option><option value="month" ${ap.freq==='month'?'selected':''}>раз на місяць</option></select></label>
    <label class="lf" id="st-aw" hidden><span>День тижня</span><select id="st-adow">${['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map((n,i)=>`<option value="${i+1}" ${(+ap.dow||1)===i+1?'selected':''}>${n}</option>`).join('')}</select></label>
@@ -345,7 +357,7 @@ function openStaff(id){
    const freq=$('st-freq').value,amount=numOf($('st-pay').value);
    const obj={id:sid,name,role:$('st-role').value.trim(),master:$('st-master').checked,
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
-    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
    const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
    await syncPeople(next);
@@ -371,6 +383,7 @@ function openSelf(ex){
   <label class="chk"><input type="checkbox" id="sf-master" ${!ex||ex.master?'checked':''}> Майстер: приймаю клієнтів</label>
   <label class="lf"><span>Загальний % від виручки</span><input id="sf-pct" inputmode="numeric" value="${ex&&ex.pct||''}" placeholder="0"></label>
   ${pctsHtml(ex)}
+  ${grpPickHtml(ex)}
   <label class="lf"><span>Рахувати баланс % з дати (необов’язково)</span><input id="sf-bf" type="date" value="${esc(ex&&ex.balFrom||'')}"></label>
   <div class="err" id="sf-err" role="alert" hidden></div>
   <div class="actions">${ex?'<button class="btn danger" id="sf-del">Прибрати зі списку</button>':''}<button class="btn primary" id="sf-save">Зберегти</button></div>`);
@@ -384,7 +397,7 @@ function openSelf(ex){
   err('');const b=$('sf-save');b.disabled=true;b.textContent='Зберігаю…';
   try{
    const obj={id:uid,name,role:$('sf-role').value.trim(),master:$('sf-master').checked,active:true,owner:true,uid:'',email:'',pw:'',perms:{},
-    pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),balFrom:$('sf-bf').value||'',pay:null,created:ex?ex.created:Date.now()};
+    pct:Math.min(100,numOf($('sf-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('sf-bf').value||'',pay:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(uid,obj);
    await syncPeople(state.staff.filter(x=>x.id!==uid).concat([obj]));
    closeSheet();toast('Збережено');
