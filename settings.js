@@ -56,9 +56,10 @@ function renderSettings(force){
  if(!force&&el.contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
  if(normalizeGroups&&state.cfg&&cfgServices().some(x=>!x.gid&&String(x.group||'').trim())){normalizeGroups().then(()=>renderSettings(true));return}
  const sv=cfgServices(),ct=cfgCats(),skin=document.documentElement.dataset.skin,mp=lsGet('magnifica-mode','auto');
- const staffRows=state.staff.map(s=>`<button class="cl" data-staff="${esc(s.id)}"><span class="av">${esc(initials(s.name))}</span>
+ const stOrd=byStaffOrder(state.staff);
+ const staffRows=stOrd.map((s,i)=>`<div class="strow"><button class="cl" data-staff="${esc(s.id)}"><span class="av">${esc(initials(s.name))}</span>
   <span class="cl-m"><span class="cl-n">${esc(s.name)}${s.active===false?' · вимкнено':''}</span><span class="cl-s">${esc(s.role||'без посади')}${s.owner?' · акаунт власника':s.email?' · '+esc(s.email):' · без входу на сайт'}</span></span>
-  <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button>`).join('');
+  <span class="cl-b">${s.master?'<i class="bdg">Майстер</i>':''}${s.owner?'<i class="bdg vip">Власник</i>':s.uid?'<i class="bdg vip">Має доступ</i>':''}</span></button><span class="mv"><button type="button" data-mv="up:${esc(s.id)}" aria-label="Вище" ${i===0?'disabled':''}>▲</button><button type="button" data-mv="dn:${esc(s.id)}" aria-label="Нижче" ${i===stOrd.length-1?'disabled':''}>▼</button></span></div>`).join('');
  el.innerHTML=`<div class="set-grid">
  <div class="card"><h2 class="set-h">Послуги та ціни</h2>
   <p class="set-p">Послуги з однаковою групою (наприклад, «Манікюр» для комплексу, чистки, зняття лаку) показуються на Огляді одним банером. Час (хв) підставляється в запис і його можна змінити. Ціна підставляється автоматично при створенні запису. Зміна ціни діє лише на нові записи: у вже створених ціна залишається та, що була.</p>
@@ -100,7 +101,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5d</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5e</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -520,6 +521,11 @@ function initSettings(){
   if(t.closest('#addCat')){cfgDoc().expCats.push({id:'c'+newId().slice(0,8),name:'Нова категорія'});saveCfg();renderSettings(true);const r=[...sett.querySelectorAll('.setrow[data-cid] .nm')].pop();if(r){r.focus();r.select()}return}
   if(t.closest('#addStaff')){openStaff();return}
   if(t.closest('#addSelf')){openSelf();return}
+  if((b=t.closest('[data-mv]'))){
+   const[dir,id]=b.dataset.mv.split(':'),ids=byStaffOrder(state.staff).map(s=>s.id),i=ids.indexOf(id),j=dir==='up'?i-1:i+1;
+   if(i<0||j<0||j>=ids.length)return;
+   [ids[i],ids[j]]=[ids[j],ids[i]];cfgDoc().staffOrder=ids;saveCfg();renderAll();renderSettings(true);return;
+  }
   if((b=t.closest('[data-staff]'))){openStaff(b.dataset.staff);return}
   if((b=t.closest('.skin-btn'))){setSkin(b.dataset.skin);return}
   if((b=t.closest('.seg button[data-mode]'))){lsSet('magnifica-mode',b.dataset.mode);applyMode();renderSettings(true);return}

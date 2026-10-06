@@ -689,3 +689,8 @@ html.rep-open body{overflow:hidden}
 }
 .grppick{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:6px}
 .repsel{display:flex;flex-wrap:wrap;gap:6px}
+.strow{display:flex;gap:6px;align-items:stretch;margin-bottom:6px}
+.strow .cl{flex:1;min-width:0;margin-bottom:0}
+.strow .mv{display:flex;flex-direction:column;gap:4px;justify-content:center}
+.strow .mv button{width:34px;height:26px;border-radius:9px;border:1px solid var(--line);background:var(--btn-bg);color:var(--text);font-size:11px;line-height:1;cursor:pointer;padding:0}
+.strow .mv button:disabled{opacity:.3;cursor:default}
