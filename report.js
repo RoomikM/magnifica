@@ -12,6 +12,17 @@ function repMonthAgg(D,mk){
  const sal=state.sals.filter(x=>String(x.d).startsWith(mk)).reduce((a,x)=>a+(+x.amount||0),0);
  return{key:mk,rev,ex,sal,cats,groups,visits:workedCount('month',mk).n,days:days.map(d=>[d.key,d.total])};
 }
+function repKeys(){
+ SV=svList();
+ const D=compute(),cur=todayKey().slice(0,7);
+ return [...new Set([...D.monthly.map(m=>m.key),...D.profitMonths.map(m=>m.key)])].filter(k=>k<=cur&&((D.monthly.find(m=>m.key===k)||{}).total>0||(D.profitMonths.find(m=>m.key===k)||{}).exp>0)).sort();
+}
+function repSelGet(){
+ const keys=repKeys(),cur=todayKey().slice(0,7);
+ if(!state.ui.repTouched)state.ui.repSel=keys.filter(k=>k<cur);/* поки не чіпали вибір: усі завершені місяці */
+ state.ui.repSel=(state.ui.repSel||[]).filter(k=>keys.includes(k));
+ return{keys,sel:state.ui.repSel};
+}
 function repAllAggs(){
  SV=svList();
  const D=compute(),cur=todayKey().slice(0,7);
@@ -101,38 +112,37 @@ function repRender(R,fin){
 
 /* ---- інтерфейс у застосунку ---- */
 const repChips=(ALL,sel)=>`<div class="lbl">Місяці у звіті (можна обрати кілька)</div><button class="chp" type="button" data-rall aria-pressed="${sel.length===ALL.length}">Усі</button><button class="chp" type="button" data-rnone aria-pressed="false">Очистити</button>${ALL.slice().reverse().map(a=>`<button class="chp" type="button" data-rm="${a.key}" aria-pressed="${sel.includes(a.key)}">${MSHORT[+a.key.slice(5)-1]} ${a.key.slice(0,4)}${a.key===todayKey().slice(0,7)?' · триває':''}</button>`).join('')}`;
+function repBoxHtml(){
+ const{keys,sel}=repSelGet(),cur=todayKey().slice(0,7);
+ if(!keys.length)return '<div class="hint">Даних для звіту ще немає.</div>';
+ return `<div class="lbl2">Які місяці включити у звіт</div>
+  <div class="repsel">${keys.slice().reverse().map(k=>`<button class="chp" type="button" data-rs="${k}" aria-pressed="${sel.includes(k)}">${MSHORT[+k.slice(5)-1]} ${k.slice(0,4)}${k===cur?' · триває':''}</button>`).join('')}</div>
+  <div class="btnrow" style="margin:8px 0 10px"><button class="btn sm" type="button" data-rsall>Усі місяці</button><button class="btn sm" type="button" data-rsdone>Лише завершені</button><button class="btn sm" type="button" data-rsnone>Зняти всі</button></div>
+  <div class="hint" id="repCnt" style="margin:0 0 10px">Вибрано місяців: <b>${sel.length}</b></div>`;
+}
 function reportCardHtml(){
  if(!isOwner())return '';
  return `<div class="card"><h2 class="set-h">Звіт для рієлтора</h2>
-  <p class="set-p">Гарний звіт для показу покупцям або партнерам: виручка, структура доходу, витрати, прибуток. Місяці для звіту обираєте самі. Без імен клієнтів і майстрів. Можна зберегти у PDF або в автономний HTML-файл.</p>
+  <p class="set-p">Гарний звіт для показу покупцям або партнерам: виручка, структура доходу, витрати, прибуток. Спочатку позначте місяці, потім сформуйте звіт саме з них. Без імен клієнтів і майстрів. Можна зберегти у PDF або в автономний HTML-файл.</p>
+  <div id="repBox">${repBoxHtml()}</div>
   <label class="chk"><input type="checkbox" id="repFin" checked> Показувати витрати, зарплату і прибуток</label>
   <div style="margin-top:10px"><button class="btn sm primary" id="repGo">Сформувати звіт</button></div></div>`;
 }
 function openReport(fin){
  let ov=$('rep');if(ov)ov.remove();
- const ALL=repAllAggs();if(!ALL.length){toast('Немає даних для звіту');return}
- const cur=todayKey().slice(0,7);
- let sel=ALL.map(a=>a.key).filter(k=>k<cur),finOn=fin!==false;
- if(!sel.length)sel=ALL.map(a=>a.key);
+ const ALL=repAllAggs(),{sel}=repSelGet();
+ if(!ALL.length){toast('Немає даних для звіту');return}
+ if(!sel.length){toast('Позначте хоча б один місяць');return}
+ const picked=sel.slice(),finOn0=fin!==false;
  ov=document.createElement('div');ov.id='rep';ov.className='rep';
- ov.innerHTML=`<div class="rep-bar"><button class="btn sm" id="repClose">← Закрити</button><div class="rep-top"><label class="chk" style="margin:0"><input type="checkbox" id="repFin2" ${finOn?'checked':''}> витрати і прибуток</label><button class="btn sm" id="repHtml">Зберегти HTML</button><button class="btn sm primary" id="repPrint">Друк / PDF</button></div></div><div class="rep-months" id="repMonths"></div><div class="rep-body" id="repBody"></div>`;
+ ov.innerHTML=`<div class="rep-bar"><button class="btn sm" id="repClose">← Змінити місяці</button><div class="rep-top"><label class="chk" style="margin:0"><input type="checkbox" id="repFin2" ${finOn0?'checked':''}> витрати і прибуток</label><button class="btn sm" id="repHtml">Зберегти HTML</button><button class="btn sm primary" id="repPrint">Друк / PDF</button></div></div><div class="rep-body" id="repBody"></div>`;
  document.body.appendChild(ov);document.documentElement.classList.add('rep-open');
- const draw=()=>{
-  $('repMonths').innerHTML=repChips(ALL,sel);
-  $('repBody').innerHTML=repRender(repCombine(sel,ALL,todayKey()),finOn);
- };
+ const draw=()=>{$('repBody').innerHTML=repRender(repCombine(picked,ALL,todayKey(),ALL.length),$('repFin2').checked)};
  draw();
- $('repMonths').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  if(b.hasAttribute('data-rall'))sel=ALL.map(a=>a.key);
-  else if(b.hasAttribute('data-rnone'))sel=[];
-  else if(b.dataset.rm){sel=sel.includes(b.dataset.rm)?sel.filter(k=>k!==b.dataset.rm):sel.concat([b.dataset.rm])}
-  draw();
- });
- $('repFin2').addEventListener('change',e=>{finOn=e.target.checked;draw()});
+ $('repFin2').addEventListener('change',draw);
  $('repClose').addEventListener('click',()=>{ov.remove();document.documentElement.classList.remove('rep-open')});
  $('repPrint').addEventListener('click',()=>window.print());
- $('repHtml').addEventListener('click',()=>exportReportHtml(ALL,sel,finOn));
+ $('repHtml').addEventListener('click',()=>exportReportHtml(ALL,picked,$('repFin2').checked));
 }
 
 /* ---- автономний HTML: усі дані вшиті; вибір місяців (JS) + запасний режим без JS (один місяць / усі) ---- */
@@ -179,5 +189,12 @@ draw();`;
  saveFile('magnifica-zvit-'+todayKey()+'.html',doc,'text/html');
 }
 document.addEventListener('click',e=>{
- if(e.target.closest('#repGo'))openReport($('repFin')?$('repFin').checked:true);
+ const t=e.target,box=()=>{const b=$('repBox');if(b)b.innerHTML=repBoxHtml()};
+ let b;
+ if(t.closest('#repGo')){openReport($('repFin')?$('repFin').checked:true);return}
+ if((b=t.closest('[data-rs],[data-rsall],[data-rsdone],[data-rsnone]')))state.ui.repTouched=true;
+ if((b=t.closest('[data-rs]'))){const k=b.dataset.rs,sel=repSelGet().sel;state.ui.repSel=sel.includes(k)?sel.filter(x=>x!==k):sel.concat([k]);box();return}
+ if(t.closest('[data-rsall]')){state.ui.repSel=repKeys();box();return}
+ if(t.closest('[data-rsdone]')){const c=todayKey().slice(0,7);state.ui.repSel=repKeys().filter(k=>k<c);box();return}
+ if(t.closest('[data-rsnone]')){state.ui.repSel=[];box();return}
 });

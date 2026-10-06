@@ -688,3 +688,4 @@ html.rep-open body{overflow:hidden}
  @page{margin:14mm}
 }
 .grppick{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:6px}
+.repsel{display:flex;flex-wrap:wrap;gap:6px}
