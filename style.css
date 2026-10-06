@@ -570,10 +570,10 @@ html[data-mode="phone"] .be-card .be-note{font-size:10.5px;margin-top:3px}
 html.nophone .ph-f{display:none!important}
 
 .mc{overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;margin:0 -2px;-webkit-overflow-scrolling:touch}
-.mc-in{display:flex;min-width:100%}
+.mc-in{display:flex;width:100%}
 .mc-g{flex:0 0 42px;position:sticky;left:0;z-index:3;background:var(--card-solid)}
 .mc-gh{height:68px}
-.mc-c{flex:1 0 150px;min-width:150px}
+.mc-c{flex:1 0 calc((100% - 42px)/3);min-width:96px}
 html[data-mode="desktop"] .mc-c{flex:1 1 0;min-width:0}
 html[data-mode="desktop"] .mc{overflow:visible}
 .mc-h{height:68px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.25;border-left:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center;font-size:11px;color:var(--muted);padding:3px 4px;min-width:0}

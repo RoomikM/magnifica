@@ -101,7 +101,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5g</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5h</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -352,6 +352,7 @@ function openStaff(id){
    let uid=ex?ex.uid||'':'';
    let sid=ex?ex.id:'';
    if(wantLogin){uid=await Store.createUser(email,pass);sid=uid}
+   const oldId=ex&&sid!==ex.id?ex.id:'';
    if(!sid)sid=newId();
    const perms={};
    if(uid||hasLogin)document.querySelectorAll('[data-p]').forEach(i=>{if(i.checked)perms[i.dataset.p]=true});
@@ -360,7 +361,15 @@ function openStaff(id){
     active:hasLogin?$('st-active').checked:true,uid,email:hasLogin?ex.email:email,pw:hasLogin?(ex.pw||''):pass,perms,
     pct:Math.min(100,numOf($('st-pct').value)),pcts:readPcts(),grps:readGrps(),balFrom:$('st-bf').value||'',autoPay:$('st-af').value?{freq:$('st-af').value,dow:+$('st-adow').value||1,dom:Math.min(31,Math.max(1,numOf($('st-adom').value)||1)),since:(ex&&ex.autoPay&&ex.autoPay.freq?ex.autoPay.since:'')||todayKey()}:null,pay:freq&&amount>0?{freq,amount,start:$('st-start').value||todayKey()}:null,created:ex?ex.created:Date.now()};
    await Store.saveStaff(obj.id,obj);
-   const next=state.staff.filter(x=>x.id!==obj.id).concat([obj]);
+   if(oldId){
+    /* картка отримала логін → id став uid: переносимо записи й виплати, старий дубль видаляємо */
+    for(const a of state.appts.filter(x=>x.m===oldId))await Store.saveAppt(a.id,{...a,m:sid});
+    for(const x of state.sals.filter(x=>x.sid===oldId))await Store.saveSalary(x.id,{...x,sid});
+    const so=(state.cfg&&state.cfg.staffOrder)||[];
+    if(so.includes(oldId))cfgDoc().staffOrder=so.map(i=>i===oldId?sid:i);
+    await Store.deleteStaff(oldId);
+   }
+   const next=state.staff.filter(x=>x.id!==obj.id&&x.id!==oldId).concat([obj]);
    await syncPeople(next);
    closeSheet();
    if(wantLogin){copyText(accessText(obj),'Працівника створено. Доступ скопійовано в буфер.','Працівника створено. Відкрийте картку й натисніть «Скопіювати доступ».')}
