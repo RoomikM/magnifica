@@ -636,3 +636,49 @@ html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1
 .mc-s .ev b{font-size:9.5px;display:block}
 .mc-s .ev .n{font-size:10px}
 .mc-s .ev .s{display:none}
+
+/* звіт для рієлтора: завжди світлий, придатний до друку */
+.rep{position:fixed;inset:0;z-index:300;background:#eef1f4;overflow:auto;-webkit-overflow-scrolling:touch;color:#1d2330}
+.rep-bar{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px;background:#1d2330;color:#fff}
+.rep-bar .btn{background:#2b3446;color:#fff;border-color:#3a455b}.rep-bar .btn.primary{background:#e9c46a;color:#1d2330;border-color:#e9c46a}
+.rep-sel{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rep-sel select{font:inherit;font-size:14px;padding:7px 10px;border-radius:10px;border:1px solid #3a455b;background:#2b3446;color:#fff}
+.rep-sel .chk{color:#fff;margin:0}
+.rep-body{padding:18px 12px 40px}
+.rp-page{max-width:860px;margin:0 auto;background:#fff;border-radius:18px;padding:30px 28px;box-shadow:0 10px 40px rgba(20,30,50,.12);font-family:inherit;line-height:1.4}
+.rp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;border-bottom:2px solid #1d2330;padding-bottom:14px}
+.rp-brand{font-size:26px;font-weight:300;letter-spacing:.32em}.rp-tag{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:#7b8794;margin-top:2px}
+.rp-per{text-align:right}.rp-per b{display:block;font-size:20px}.rp-per span{font-size:12px;color:#7b8794}
+.rp-h1{font-size:15px;text-transform:uppercase;letter-spacing:.14em;color:#7b8794;font-weight:700;margin:22px 0 14px}
+.rp-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+.rp-t{background:#f4f6f8;border-radius:14px;padding:14px 14px 12px;border-top:3px solid #3b6e8f}
+.rp-t span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#7b8794;font-weight:700}
+.rp-t b{display:block;font-size:24px;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.rp-t small{display:block;font-size:11.5px;color:#5c6773}
+.rp-t em{font-style:normal;font-weight:700}.rp-t em.up{color:#2f7d5b}.rp-t em.dn{color:#c0483f}
+.rp-t.pos{border-top-color:#2f7d5b}.rp-t.pos b{color:#2f7d5b}.rp-t.neg{border-top-color:#c0483f}.rp-t.neg b{color:#c0483f}
+.rp-sec{margin:0 0 22px}.rp-sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#1d2330;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #e3e7ec}
+.rp-sec svg{width:100%;height:auto;display:block}
+.rp-two{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.rp-bar{margin-bottom:10px}.rp-bh{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px}
+.rp-bh b{font-variant-numeric:tabular-nums;white-space:nowrap}.rp-bh small{color:#7b8794;font-weight:600}
+.rp-bt{height:8px;border-radius:99px;background:#eef1f4;overflow:hidden}.rp-bt i{display:block;height:100%;border-radius:99px}
+.rp-leg{display:flex;gap:16px;justify-content:center;font-size:12px;color:#5c6773;margin-top:6px}.rp-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.rp-note{background:#f4f6f8;border-radius:12px;padding:12px 14px;font-size:13px}
+.rp-tab{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.rp-tab th{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#7b8794;padding:6px 8px;border-bottom:1px solid #cfd6de}
+.rp-tab td{text-align:right;padding:7px 8px;border-bottom:1px solid #eef1f4}.rp-tab th:first-child,.rp-tab td:first-child{text-align:left}
+.rp-tab td.neg{color:#c0483f}
+.rp-empty{color:#7b8794;font-size:13px;padding:8px 0}
+.rp-foot{margin-top:26px;padding-top:12px;border-top:1px solid #e3e7ec;font-size:10.5px;color:#7b8794}
+@media(max-width:640px){.rp-page{padding:20px 16px}.rp-tiles{grid-template-columns:1fr 1fr}.rp-two{grid-template-columns:1fr}.rp-t b{font-size:20px}.rp-brand{font-size:21px}}
+html.rep-open body{overflow:hidden}
+@media print{
+ html.rep-open body>*:not(#rep){display:none!important}
+ html.rep-open body{overflow:visible}
+ .rep{position:static;background:#fff;overflow:visible}.rep-bar{display:none}.rep-body{padding:0}
+ .rp-page{box-shadow:none;border-radius:0;max-width:none;padding:0}
+ .rp-sec,.rp-t,.rp-bar{break-inside:avoid}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ @page{margin:14mm}
+}
