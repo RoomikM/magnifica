@@ -707,3 +707,7 @@ html.rep-open body{overflow:hidden}
 #overview.swl{animation:swl .22s ease-out}#overview.swr{animation:swr .22s ease-out}
 @keyframes swl{from{opacity:.3;transform:translateX(26px)}to{opacity:1;transform:none}}
 @keyframes swr{from{opacity:.3;transform:translateX(-26px)}to{opacity:1;transform:none}}
+
+html[data-mode="desktop"] .pm-h{display:none}
+html[data-mode="desktop"] .pswipe{justify-content:flex-start}
+html:not([data-mode="desktop"]) .pm-a{display:none}

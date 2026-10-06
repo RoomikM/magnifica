@@ -289,7 +289,7 @@ function profitHtml(D){
  return `<div class="profit">
   <div class="profit-top"><div class="ptitle"><span class="label">Чистий прибуток</span>${r==='month'?`<span class="pmonth">${MONTHS[pm-1]} ${py}</span>`:''}</div>
    <div class="seg" role="group" aria-label="Період"><button data-range="all" aria-pressed="${r==='all'}">Весь час</button><button data-range="month" aria-pressed="${r==='month'}">Місяць</button></div></div>
-  ${r==='month'?`<div class="pswipe"><span>‹ гортайте вліво / вправо ›</span>${mk!==todayKey().slice(0,7)?'<button class="btn sm" data-pm="0">Цей місяць</button>':''}</div>`:''}
+  ${r==='month'?`<div class="pswipe"><button class="iconbtn pm-a" data-pm="-1" aria-label="Попередній місяць">‹</button><span class="pm-h">‹ гортайте вліво / вправо ›</span><button class="iconbtn pm-a" data-pm="1" aria-label="Наступний місяць">›</button>${mk!==todayKey().slice(0,7)?'<button class="btn sm" data-pm="0">Цей місяць</button>':''}</div>`:''}
   <div><div class="profit-main ${net<0?'neg':'pos'}">${net<0?'−':''}${money(Math.abs(net))}</div>
    ${margin==null?'':`<div class="sub">${margin<0?'−'+Math.abs(margin):margin}% від доходу${futSum?` · попереду записів на ${money(futSum)}`:''}</div>`}</div>
   <div class="profit-row"><div><span>Дохід</span><b>${money(rev)}</b></div><div><span>Витрати і зарплата</span><b>${money(exp)}</b></div><div><span>Записів</span><b>${fmt(workedCount(r,mk).n)}</b></div></div>

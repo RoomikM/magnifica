@@ -33,7 +33,7 @@ $('profit').addEventListener('click',e=>{
   ov.classList.remove('swl','swr');void ov.offsetWidth;ov.classList.add(n>0?'swl':'swr');
  };
  ov.addEventListener('touchstart',e=>{
-  ok=state.ui.range==='month'&&e.touches.length===1&&!e.target.closest('input,select,textarea,.seg,[data-noswipe]');
+  ok=isMobile()&&state.ui.range==='month'&&e.touches.length===1&&!e.target.closest('input,select,textarea,.seg,[data-noswipe]');
   if(ok){sx=e.touches[0].clientX;sy=e.touches[0].clientY;t0=Date.now()}
  },{passive:true});
  ov.addEventListener('touchend',e=>{
