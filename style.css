@@ -704,9 +704,7 @@ html.rep-open body{overflow:hidden}
 .ptitle{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pmonth{font-size:20px;font-weight:800;letter-spacing:-.01em;color:var(--text);line-height:1.15}
 .pswipe{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 0 8px;font-size:11px;color:var(--muted)}
-#overview.swl{animation:swl .22s ease-out}#overview.swr{animation:swr .22s ease-out}
-@keyframes swl{from{opacity:.3;transform:translateX(26px)}to{opacity:1;transform:none}}
-@keyframes swr{from{opacity:.3;transform:translateX(-26px)}to{opacity:1;transform:none}}
+html:not([data-mode="desktop"]) #overview{touch-action:pan-y}
 
 html[data-mode="desktop"] .pm-h{display:none}
 html[data-mode="desktop"] .pswipe{justify-content:flex-start}

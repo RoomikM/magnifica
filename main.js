@@ -24,22 +24,70 @@ $('profit').addEventListener('click',e=>{
  }
 });
 
-/* перемикання місяців свайпом по сторінці «Огляд» (режим «Місяць») */
+/* перемикання місяців на «Огляді» (телефон, режим «Місяць»): сторінка гортається як грань куба слідом за пальцем */
 {
- const ov=$('overview');let sx=0,sy=0,t0=0,ok=false;
- const shift=n=>{
-  const[y,m]=(state.ui.pmonth||todayKey().slice(0,7)).split('-').map(Number),dt=new Date(Date.UTC(y,m-1+n,1));
-  state.ui.pmonth=dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1);renderAll();
-  ov.classList.remove('swl','swr');void ov.offsetWidth;ov.classList.add(n>0?'swl':'swr');
+ const ov=$('overview'),EASE='transform .32s cubic-bezier(.2,.8,.2,1)';
+ let sx=0,sy=0,t0=0,st=0,dir=0,ghost=null,W=0,lastX=0,lastT=0,vel=0;
+ const monthAt=n=>{const[y,m]=(state.ui.pmonth||todayKey().slice(0,7)).split('-').map(Number),dt=new Date(Date.UTC(y,m-1+n,1));return dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1)};
+ const place=p=>{
+  const th=-dir*p*90;
+  ov.style.transform=`translateZ(${-W/2}px) rotateY(${th}deg) translateZ(${W/2}px)`;
+  ghost.style.transform=`translateZ(${-W/2}px) rotateY(${th+dir*90}deg) translateZ(${W/2}px)`;
+  ov.style.filter=`brightness(${1-.35*p})`;ghost.style.filter=`brightness(${.65+.35*p})`;
+ };
+ const cleanup=()=>{
+  const par=ov.parentNode;
+  if(ghost){ghost.remove();ghost=null}
+  ov.style.cssText=ov.dataset.cs||'';delete ov.dataset.cs;
+  par.style.perspective='';par.style.position=par.dataset.pp||'';par.style.overflowX='';delete par.dataset.pp;
+  st=0;dir=0;
+ };
+ const begin=d=>{
+  dir=d;W=ov.offsetWidth;const par=ov.parentNode,cur=state.ui.pmonth;
+  /* знімок сусіднього місяця: рендеримо, клонуємо, повертаємо поточний */
+  state.ui.pmonth=monthAt(d);renderAll();
+  ghost=ov.cloneNode(true);ghost.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));ghost.removeAttribute('id');
+  state.ui.pmonth=cur;renderAll();
+  ov.dataset.cs=ov.style.cssText;par.dataset.pp=par.style.position;
+  par.style.position='relative';par.style.perspective='1500px';par.style.overflowX='clip';
+  ghost.style.cssText='position:absolute;top:0;left:0;width:100%;backface-visibility:hidden;pointer-events:none';
+  ov.style.backfaceVisibility='hidden';ov.style.willChange='transform';
+  ov.after(ghost);place(0);st=2;
+ };
+ const finish=commit=>{
+  if(st!==2){cleanup();return}
+  st=3;ov.style.transition=EASE;ghost.style.transition=EASE;
+  const g=ghost;
+  if(commit){
+   const th=-dir*90;
+   ov.style.transform=`translateZ(${-W/2}px) rotateY(${th}deg) translateZ(${W/2}px)`;
+   g.style.transform=`translateZ(${-W/2}px) rotateY(0deg) translateZ(${W/2}px)`;ov.style.filter='brightness(.65)';g.style.filter='none';
+   setTimeout(()=>{state.ui.pmonth=monthAt(dir);cleanup();renderAll()},330);
+  }else{place(0);setTimeout(cleanup,330)}
  };
  ov.addEventListener('touchstart',e=>{
-  ok=isMobile()&&state.ui.range==='month'&&e.touches.length===1&&!e.target.closest('input,select,textarea,.seg,[data-noswipe]');
-  if(ok){sx=e.touches[0].clientX;sy=e.touches[0].clientY;t0=Date.now()}
+  if(st>=3)return;
+  st=(isMobile()&&state.ui.range==='month'&&e.touches.length===1&&!e.target.closest('input,select,textarea,.seg,[data-noswipe]'))?1:0;
+  if(st){const tg=e.target,off=()=>{tg.removeEventListener('touchmove',mv);tg.removeEventListener('touchend',en2);tg.removeEventListener('touchcancel',cn2)},en2=ev=>{off();en(ev)},cn2=ev=>{off();cn(ev)};tg.addEventListener('touchmove',mv,{passive:true});tg.addEventListener('touchend',en2,{passive:true});tg.addEventListener('touchcancel',cn2,{passive:true});sx=lastX=e.touches[0].clientX;sy=e.touches[0].clientY;t0=lastT=Date.now();vel=0}
  },{passive:true});
- ov.addEventListener('touchend',e=>{
-  if(!ok)return;ok=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
-  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6&&Date.now()-t0<900)shift(dx<0?1:-1);
- },{passive:true});
+ const mv=e=>{
+  if(st<1||st>2)return;
+  const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy,now=Date.now();
+  if(st===1){
+   if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){st=0;return}
+   if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.2)begin(dx<0?1:-1);else return;
+  }
+  if(now>lastT){vel=(t.clientX-lastX)/(now-lastT);lastX=t.clientX;lastT=now}
+  const p=Math.max(0,Math.min(1,(-dir*(t.clientX-sx))/W));
+  place(p);
+ };
+ const en=e=>{
+  if(st<1||st>2)return;
+  if(st===1){st=0;return}
+  const dx=e.changedTouches[0].clientX-sx,p=Math.max(0,(-dir*dx)/W);
+  finish(p>.33||(p>.08&&-dir*vel>.5));
+ };
+ const cn=()=>{if(st===2)finish(false);else if(st===1)st=0};
 }
 /* логотип → головна */
 const goHome=()=>{const t=[...(isOwner()?[]:['cabinet']),'overview','records','clients','expenses'].find(canTab);if(t)setTab(t,true)};
