@@ -150,14 +150,68 @@ function openSalary(init){
  if(!ro)$('s-save').addEventListener('click',async()=>{
   const err=m=>{const e=$('s-err');e.textContent=m;e.hidden=!m};
   const d=$('s-d').value,amount=numOf($('s-a').value),sid=$('s-p').value,to=$('s-to').value;
-  if(!sid){err('Оберіть працівника.');return}
+  if(!sid&&!(ex&&ex.hist)){err('Оберіть працівника.');return}
   if(!isDate(d)){err('Оберіть дату виплати.');return}
   if(amount<=0){err('Вкажіть суму.');return}
   err('');
   const p=opts.find(p=>p.id===sid);
-  const obj={id:ex?ex.id:newId(),d,sid,sn:p?p.name:'',amount,to:isDate(to)?to:'',note:$('s-n').value.trim(),created:ex?ex.created:Date.now()};
+  const obj={id:ex?ex.id:newId(),d,sid,sn:p?p.name:((ex&&ex.sn)||''),amount,to:isDate(to)?to:'',note:$('s-n').value.trim(),created:ex?ex.created:Date.now()};
+  if(ex&&ex.hist)obj.hist=true;
   const b=$('s-save');b.disabled=true;b.textContent='Зберігаю…';
   try{const r=await Store.saveSalary(obj.id,obj);state.ui.emonth=d.slice(0,7);closeSheet();renderAll();savedToast(r,'Виплату збережено')}
   catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
+ });
+}
+
+/* ---------- одноразово: зарплата за історію (% від виручки по групах) ---------- */
+function openHistSalary(){
+ if(state.status!=='ready'||!isOwner())return;
+ const D=compute(),cur=todayKey().slice(0,7);
+ const rows=D.monthly.filter(r=>r.key<cur&&r.total>0);
+ if(!rows.length){toast('Немає минулих місяців з виручкою');return}
+ const S0=r=>{const S={};SV.forEach(s=>S[s.id]={amount:+r[s.id]||0,count:0});return S};
+ const per=rows.map(r=>({r,g:svGroups(S0(r),r.total).filter(g=>g.amount>0)}));
+ const gl=new Map();per.forEach(p=>p.g.forEach(g=>{if(!gl.has(g.key))gl.set(g.key,g.name)}));
+ const guess=n=>{n=n.toLowerCase();return /манік|педик/.test(n)?40:/мейк|бров|вії|зачіс|волос/.test(n)?60:''};
+ const lastDay=mk=>addDays(addMonths(mk+'-01',1),-1);
+ const existing=mk=>state.sals.find(x=>x.id==='hist_'+mk);
+ const others=mk=>state.sals.filter(x=>String(x.d).startsWith(mk)&&x.id!=='hist_'+mk).reduce((t,x)=>t+(+x.amount||0),0);
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Зарплата за історію</h2>${closeBtn}</div>
+  <div class="note">Одноразово: для кожного минулого місяця рахуємо зарплату як % від виручки по групах робіт і записуємо одну виплату на місяць у «Витрати → Зарплата». Поточний місяць не чіпаємо.</div>
+  <div class="lbl2">% зарплати по групах</div>
+  ${[...gl.entries()].map(([k,n])=>`<label class="pctrow"><span>${esc(n)}</span><input data-hr="${esc(k)}" inputmode="numeric" maxlength="3" placeholder="0" value="${guess(n)}"></label>`).join('')}
+  <div class="lbl2" style="margin-top:12px">Місяці</div>
+  <div id="hs-rows"></div>
+  <div class="sum"><span>Разом зарплата</span><b id="hs-tot">0&nbsp;₴</b></div>
+  <div class="err" id="hs-err" role="alert" hidden></div>
+  <div class="actions"><button class="btn primary" id="hs-save">Записати у зарплату</button></div>`);
+ const rates=()=>{const o={};document.querySelectorAll('[data-hr]').forEach(i=>{const v=i.value.replace(/\D/g,'');o[i.dataset.hr]=v===''?0:Math.min(100,+v)});return o};
+ const calc=p=>{const R=rates();return Math.round(p.g.reduce((t,g)=>t+g.amount*(R[g.key]||0)/100,0))};
+ const draw=()=>{
+  $('hs-rows').innerHTML=per.map(p=>{
+   const mk=p.r.key,ex=existing(mk),ot=others(mk),on=!ex&&!ot;
+   const prev=$('hs-rows').querySelector('[data-hm="'+mk+'"]');
+   const chk=prev?prev.checked:on;
+   return `<label class="chk" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span><input type="checkbox" data-hm="${mk}" ${chk?'checked':''}> ${MONTHS[+mk.slice(5)-1]} ${mk.slice(0,4)}<small class="hint" style="margin:0 0 0 6px">виручка ${money(p.r.total)}${ex?' · вже є запис, буде замінено':ot?' · уже є виплати '+money(ot):''}</small></span><b>${money(calc(p))}</b></label>`}).join('');
+  upT();
+ };
+ const upT=()=>{let t=0;per.forEach(p=>{const c=document.querySelector('[data-hm="'+p.r.key+'"]');if(c&&c.checked)t+=calc(p)});$('hs-tot').textContent=money(t)};
+ draw();
+ document.querySelectorAll('[data-hr]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,3);draw()}));
+ $('hs-rows').addEventListener('change',upT);
+ $('hs-save').addEventListener('click',async()=>{
+  const R=rates(),pick=per.filter(p=>{const c=document.querySelector('[data-hm="'+p.r.key+'"]');return c&&c.checked&&calc(p)>0});
+  const e=$('hs-err');
+  if(!pick.length){e.textContent='Оберіть місяці та задайте відсотки.';e.hidden=false;return}
+  e.hidden=true;const b=$('hs-save');b.disabled=true;b.textContent='Записую…';
+  try{
+   for(const p of pick){
+    const mk=p.r.key,id='hist_'+mk,amount=calc(p);
+    const note=p.g.filter(g=>R[g.key]>0).map(g=>g.name+' '+R[g.key]+'%').join(', ');
+    const old=existing(mk);
+    await Store.saveSalary(id,{id,d:lastDay(mk),sid:'',sn:'Зарплата (за історію)',amount,to:lastDay(mk),note,hist:true,created:old?old.created:Date.now()});
+   }
+   closeSheet();renderAll();toast('Записано місяців: '+pick.length);
+  }catch(er){e.textContent=errText(er);e.hidden=false;b.disabled=false;b.textContent='Записати у зарплату'}
  });
 }

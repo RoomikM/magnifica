@@ -82,6 +82,9 @@ function renderSettings(force){
   <p class="set-p">Режим за замовчуванням визначається автоматично за шириною екрана.</p>
   <div class="lbl2">Тема</div><div class="skins" style="margin-bottom:14px">${SKINS.map(([k,n])=>`<button class="skin-btn" data-skin="${k}" aria-pressed="${skin===k}"><span class="swatch ${k}"></span>${n}</button>`).join('')}</div>
   <div class="lbl2">Режим</div><div class="seg" role="group" aria-label="Режим"><button data-mode="auto" aria-pressed="${mp==='auto'}">Авто</button><button data-mode="phone" aria-pressed="${mp==='phone'}">Телефон</button><button data-mode="desktop" aria-pressed="${mp==='desktop'}">Комп’ютер</button></div>${installBlockHtml()}</div>
+ <div class="card"><h2 class="set-h">Зарплата за історію</h2>
+  <p class="set-p">Одноразово: порахувати зарплату за минулі місяці як % від виручки по групах (манікюр, педикюр, мейк…) і записати її у витрати місяць за місяцем.</p>
+  <button class="btn sm" id="histSal">Порахувати зарплату за історію</button></div>
  <div class="card"><h2 class="set-h">Дані</h2>
   <p class="set-p">Копія зберігає все: дні, записи, клієнтів, витрати, виплати, послуги. Корисно робити раз на місяць.</p>
   <div class="btnrow"><button class="btn sm" id="exJson">Копія (JSON)</button><button class="btn sm" id="exCsv">Таблиця (CSV)</button><button class="btn sm" id="imBtn">Імпорт з файлу</button><button class="btn sm" id="manDay">Внести день сумою</button><button class="btn sm" id="archBtn">Архів старих записів</button></div></div>
@@ -96,7 +99,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4v</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v4w</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -128,7 +131,7 @@ const grpOpts=sv=>{
  return h;
 };
 /* вкладки налаштувань: картки групуються за заголовком */
-const SET_TABS=[['svc','Послуги',['Послуги та ціни']],['cat','Витрати',['Категорії витрат']],['staff','Працівники',['Працівники']],['msg','Повідомлення',['Повідомлення клієнтам']],['look','Вигляд',['Вигляд']],['sec','Безпека',['Безпека','Акаунт']],['data','Дані',['Дані','Логи']]];
+const SET_TABS=[['svc','Послуги',['Послуги та ціни']],['cat','Витрати',['Категорії витрат']],['staff','Працівники',['Працівники']],['msg','Повідомлення',['Повідомлення клієнтам']],['look','Вигляд',['Вигляд']],['sec','Безпека',['Безпека','Акаунт']],['data','Дані',['Зарплата за історію','Дані','Логи']]];
 function applySetTab(el){
  let cur=lsGet('magnifica-settab','svc');if(!SET_TABS.some(t=>t[0]===cur))cur='svc';
  const grid=el.querySelector('.set-grid');if(!grid)return;
@@ -509,6 +512,7 @@ function initSettings(){
   if(t.closest('#exJson')){saveFile('magnifica-backup-'+todayKey()+'.json',JSON.stringify(backupObj()),'application/json');return}
   if(t.closest('#exCsv')){exportCsv();return}
   if(t.closest('#imBtn')){$('impFile').click();return}
+  if(t.closest('#histSal')){openHistSalary();return}
   if(t.closest('#manDay')){openDay();return}
   if(t.closest('#hardRefresh')){(async()=>{try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}location.reload()})();return}
   if(t.closest('#kickAll2'))return;
