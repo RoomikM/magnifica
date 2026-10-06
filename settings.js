@@ -102,7 +102,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5m</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5n</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -335,10 +335,10 @@ function openStaff(id){
   });
  }
  if(ex)$('st-reat').addEventListener('click',async()=>{
-  const b=$('st-reat'),ids=new Set(state.staff.map(x=>x.id)),nm=String(ex.name||'').trim().toLowerCase(),full=[ex.name,ex.surname].filter(Boolean).join(' ').toLowerCase();
-  const hit=n=>{n=String(n||'').trim().toLowerCase();return n&&(n===nm||n===full)};
+  const b=$('st-reat'),ids=new Set(state.staff.map(x=>x.id)),W=n=>String(n||'').toLowerCase().split(/[\s,.]+/).filter(Boolean),mine=new Set(W([ex.name,ex.surname].join(' ')));
+  const hit=n=>{const w=W(n);return w.length>0&&w.every(x=>mine.has(x))};
   const ap=state.appts.filter(a=>!ids.has(a.m)&&hit(a.mn)),sl=state.sals.filter(x=>!ids.has(x.sid)&&hit(x.sn));
-  if(!ap.length&&!sl.length){toast('Осиротілих записів з таким іменем не знайдено');return}
+  if(!ap.length&&!sl.length){const nn=[...new Set(state.appts.filter(a=>!ids.has(a.m)&&a.mn).map(a=>a.mn))].slice(0,6);toast(nn.length?'Не збіглось. Імена без картки: '+nn.join(', '):'Осиротілих записів не знайдено');return}
   b.disabled=true;b.textContent='Прикріплюю…';
   try{for(const a of ap)await Store.saveAppt(a.id,{...a,m:ex.id});for(const x of sl)await Store.saveSalary(x.id,{...x,sid:ex.id});toast('Прикріплено: записів '+ap.length+', виплат '+sl.length)}catch(e){toast(errText(e))}
   b.disabled=false;b.textContent='Прикріпити «осиротілі» записи';
