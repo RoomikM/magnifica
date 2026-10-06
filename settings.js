@@ -102,7 +102,7 @@ function renderSettings(force){
   <div class="hint" id="kickMsg" style="margin:6px 0 0">Кнопка працює і з телефону: усі відкриті комп’ютерні сторінки розлогіняться (за кілька секунд, якщо є інтернет).</div></div>
  <div class="card"><h2 class="set-h">Акаунт</h2>
   <div class="who">Ви увійшли як <b>${esc(state.user?state.user.email:'')}</b></div>
-  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5l</div></div>
+  <button class="btn sm" id="logout">Вийти</button> <button class="btn sm" id="hardRefresh">Оновити застосунок</button><div class="ver" id="ver">MAGNiFICA · v5m</div></div>
  </div>`;
  applySetTab(el);
  renderLogs();
@@ -296,6 +296,7 @@ function openStaff(id){
   <div class="hint" style="margin:-4px 0 8px">Заробіток від % накопичується в кабінеті майстра, виплати його зменшують, залишок переноситься. Дата потрібна, щоб не враховувати старі записи.</div>
   <div class="err" id="st-err" role="alert" hidden></div>
   ${ex&&!ex.uid&&state.staff.some(x=>x.id!==ex.id)?`<div class="lf"><span>Це дубль? Перенести всі записи й виплати в іншу картку, а цю видалити</span><div style="display:flex;gap:8px"><select id="st-mg" style="flex:1">${state.staff.filter(x=>x.id!==ex.id).map(x=>`<option value="${esc(x.id)}">${esc([x.name,x.surname].filter(Boolean).join(' '))}</option>`).join('')}</select><button class="btn" type="button" id="st-mgbtn">Перенести</button></div></div>`:''}
+  ${ex?`<div class="lf"><span>Є записи цього майстра без прив'язки (після видалення дубля)? Знайти їх за іменем і прикріпити до цієї картки</span><button class="btn" type="button" id="st-reat">Прикріпити «осиротілі» записи</button></div>`:''}
   <div class="actions">${ex?'<button class="btn danger" id="st-del">Видалити</button>':''}<button class="btn primary" id="st-save">Зберегти</button></div>`);
  digitsOnly($('st-pay'));digitsOnly($('st-pct'));bindPcts('st-pct');digitsOnly($('st-adom'));
  const showAf=()=>{const v=$('st-af').value;$('st-aw').hidden=v!=='week';$('st-am').hidden=v!=='month'};$('st-af').addEventListener('change',showAf);showAf();
@@ -333,6 +334,15 @@ function openStaff(id){
    }
   });
  }
+ if(ex)$('st-reat').addEventListener('click',async()=>{
+  const b=$('st-reat'),ids=new Set(state.staff.map(x=>x.id)),nm=String(ex.name||'').trim().toLowerCase(),full=[ex.name,ex.surname].filter(Boolean).join(' ').toLowerCase();
+  const hit=n=>{n=String(n||'').trim().toLowerCase();return n&&(n===nm||n===full)};
+  const ap=state.appts.filter(a=>!ids.has(a.m)&&hit(a.mn)),sl=state.sals.filter(x=>!ids.has(x.sid)&&hit(x.sn));
+  if(!ap.length&&!sl.length){toast('Осиротілих записів з таким іменем не знайдено');return}
+  b.disabled=true;b.textContent='Прикріплюю…';
+  try{for(const a of ap)await Store.saveAppt(a.id,{...a,m:ex.id});for(const x of sl)await Store.saveSalary(x.id,{...x,sid:ex.id});toast('Прикріплено: записів '+ap.length+', виплат '+sl.length)}catch(e){toast(errText(e))}
+  b.disabled=false;b.textContent='Прикріпити «осиротілі» записи';
+ });
  if(ex&&$('st-mgbtn'))arm($('st-mgbtn'),'Точно перенести?',async()=>{
   const to=$('st-mg').value,tp=state.staff.find(x=>x.id===to);if(!tp)return;
   const nm=[tp.name,tp.surname].filter(Boolean).join(' ');
