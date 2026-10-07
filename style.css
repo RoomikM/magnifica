@@ -439,7 +439,7 @@ textarea.rules{display:block;width:100%;font:12px/1.4 ui-monospace,Menlo,Consola
 
 .fx{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap}
 .fx input{accent-color:var(--accent)}
-.setrow.cat{grid-template-columns:minmax(0,1fr) auto auto}
+.setrow.cat{grid-template-columns:minmax(0,1fr) 92px auto 34px}
 .msgp textarea,textarea[data-tpl]{display:block;width:100%;font:inherit;font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px 11px;resize:vertical}
 .msgb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .msgb a{text-decoration:none;cursor:pointer}
@@ -602,8 +602,8 @@ html[data-mode="desktop"] .set-p{max-width:760px}
 .setrow select.grp:hover{border-color:var(--accent)}
 .setrow select.grp option{background:var(--card-solid);color:var(--text)}
 html[data-mode="desktop"] .setrow[data-sid]>.grp{font-size:15px;padding:9px 34px 9px 12px;border-radius:12px}
-.setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 112px 34px}
-html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 190px 38px}
+.setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 92px auto 34px}
+html[data-mode="desktop"] .setrow.cat[data-cid]{grid-template-columns:minmax(0,1fr) 190px auto 38px}
 .pctrow.grp span{font-weight:800}
 .pctrow.sub{padding-left:16px}
 .pctrow.sub span{color:var(--muted);font-size:12.5px}
@@ -709,3 +709,10 @@ html:not([data-mode="desktop"]) #overview{touch-action:pan-y}
 html[data-mode="desktop"] .pm-h{display:none}
 html[data-mode="desktop"] .pswipe{justify-content:flex-start}
 html:not([data-mode="desktop"]) .pm-a{display:none}
+
+.rec-t{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;cursor:pointer}
+.rec-t input{width:18px;height:18px;padding:0;accent-color:var(--accent)}
+.rec-box{margin:0 0 12px}
+.rec-h{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:0 0 6px}
+.exrow.rec-p{opacity:.55;filter:grayscale(1);border-style:dashed;background:transparent}
+.exrow.rec-p:hover,.exrow.rec-p:active{opacity:.85;filter:grayscale(.3)}

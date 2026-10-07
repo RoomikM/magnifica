@@ -141,6 +141,7 @@ $('expenses').addEventListener('click',e=>{
  }
  if((b=t.closest('[data-pay]'))){openSalary({sid:b.dataset.pay});return}
  if((b=t.closest('[data-sid-pay]'))){const x=state.sals.find(z=>z.id===b.dataset.sidPay);if(x)openSalary(x);return}
+ if((b=t.closest('[data-rec-pay]'))){if(can('expEdit'))openRecPay(b.dataset.recPay);else toast('Немає прав на цю дію.');return}
  if((b=t.closest('.exrow[data-id]'))){const x=state.exps.find(z=>z.id===b.dataset.id);if(x)openExp(x)}
 });
 

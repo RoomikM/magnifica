@@ -47,8 +47,10 @@ function expenseView(D,mk,m,y){
  const sum=`<div class="card ex-sum"><h2>${MONTHS[m-1]} ${y}</h2><div class="caption">Підсумок за місяць${can('salaryView')?', включно із зарплатою':''}</div>
   <div class="profit-row" style="margin:0 0 14px">${fin?`<div><span>Дохід</span><b>${money(rev)}</b></div>`:''}<div><span>Витрати</span><b>${money(total)}</b></div>${fin?`<div><span>Прибуток</span><b class="${net<0?'neg':''}">${net<0?'−':''}${money(Math.abs(net))}</b></div>`:''}</div>
   ${cats.length?cats.map(([n,v],i)=>`<div class="rank-row"><div class="rank-head"><span>${esc(n)}</span><b>${money(v)}</b></div><div class="rank-track"><i style="width:${v/maxc*100}%;background:${colorOf(i)}"></i></div></div>`).join(''):'<div class="empty" style="padding:10px">У цьому місяці витрат немає</div>'}</div>`;
+ const pend=cfgCats().filter(c=>c.rec&&!list.some(x=>x.recCat===c.id));
+ const pendHtml=pend.length?`<div class="rec-box"><div class="rec-h">Постійні витрати · очікують підтвердження</div>${pend.map(c=>`<button class="exrow rec-p" type="button" data-rec-pay="${esc(c.id)}"><div><div class="t">${esc(c.name)}</div><div class="m">Торкніться й оберіть дату</div></div><div class="a">${+c.amt>0?'−'+money(+c.amt):'— ₴'}</div></button>`).join('')}</div>`:'';
  const rows=list.length?list.map(x=>`<button class="exrow" data-id="${esc(x.id)}"><div><div class="t">${esc(catName(x))}</div><div class="m">${full(x.d)}${x.note?' · '+esc(x.note):''}</div></div><div class="a">−${money(x.amount)}</div></button>`).join(''):`<div class="empty">Витрат за цей місяць ще немає.${can('expEdit')?'<br>Натисніть «Додати витрату».':''}</div>`;
- return `<div class="ex-grid">${sum}<div class="card ex-list"><h2>Записи витрат</h2><div class="caption">${can('expEdit')?'Торкніться запису, щоб змінити або видалити':'Лише перегляд'}</div>${rows}</div></div>`;
+ return `<div class="ex-grid">${sum}<div class="card ex-list"><h2>Записи витрат</h2><div class="caption">${can('expEdit')?'Торкніться запису, щоб змінити або видалити':'Лише перегляд'}</div>${pendHtml}${rows}</div></div>`;
 }
 
 function salaryView(D,mk){
@@ -213,5 +215,31 @@ function openHistSalary(){
    }
    closeSheet();renderAll();toast('Записано місяців: '+pick.length);
   }catch(er){e.textContent=errText(er);e.hidden=false;b.disabled=false;b.textContent='Записати у зарплату'}
+ });
+}
+
+/* постійна витрата: сіра, доки власник не підтвердить датою — тоді стає звичайною витратою */
+function openRecPay(cid){
+ if(state.status!=='ready'||!can('expEdit'))return;
+ const c=cfgCats().find(k=>k.id===cid);if(!c)return;
+ const mk=state.ui.emonth,[y,m]=mk.split('-').map(Number),last=new Date(Date.UTC(y,m,0)).getUTCDate();
+ const t=todayKey(),d0=t.startsWith(mk)?t:mk+'-01';
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Підтвердити: ${esc(c.name)}</h2>${closeBtn}</div>
+  <div class="note">${MONTHS[m-1]} ${y}. Оберіть, якого числа ця витрата була: після підтвердження вона стане активною й увійде в розрахунки.</div>
+  <div class="fgrid" style="grid-template-columns:1fr 1fr"><label class="lf"><span>Дата</span><input type="date" id="r-d" value="${esc(d0)}" min="${mk}-01" max="${mk}-${pad(last)}"></label>
+   <label class="lf"><span>Сума, ₴</span><input id="r-a" inputmode="numeric" placeholder="0" value="${+c.amt>0?+c.amt:''}"></label></div>
+  <label class="lf"><span>Примітка</span><input id="r-n" autocomplete="off" placeholder="необов’язково" maxlength="160"></label>
+  <div class="err" id="r-err" role="alert" hidden></div>
+  <div class="actions"><button class="btn primary" id="r-save">Підтвердити витрату</button></div>`);
+ digitsOnly($('r-a'));
+ const err=t=>{const e=$('r-err');e.textContent=t;e.hidden=!t};
+ $('r-save').addEventListener('click',async()=>{
+  const d=$('r-d').value,amount=numOf($('r-a').value);
+  if(!isDate(d)||!d.startsWith(mk)){err('Оберіть дату в межах цього місяця.');return}
+  if(amount<=0){err('Вкажіть суму витрати.');return}
+  err('');const b=$('r-save');b.disabled=true;b.textContent='Зберігаю…';
+  const obj={id:newId(),d,amount,cat:c.id,catName:c.name,recCat:c.id,note:$('r-n').value.trim(),created:Date.now()};
+  try{const r=await Store.saveExp(obj.id,obj);closeSheet();renderAll();savedToast(r,'Витрату підтверджено')}
+  catch(e){err(errText(e));b.disabled=false;b.textContent='Підтвердити витрату'}
  });
 }
