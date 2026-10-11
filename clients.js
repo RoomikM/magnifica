@@ -148,6 +148,8 @@ function openClient(idOrObj,opt){
   $('c-save').addEventListener('click',async()=>{
    const name=$('c-name').value.trim();
    if(!name){err('Вкажіть ім’я клієнта.');return}
+   const pk=phoneKey($('c-phone').value);
+   if(pk){const dup=state.clients.find(x=>x.id!==c.id&&phoneKey(x.phone)===pk);if(dup){err('Клієнт з таким телефоном уже є: «'+dup.name+'». Дублікат створити не можна.');return}}
    const t=$('c-rt').value.trim();if(t){c.reviews.push({d:todayKey(),text:t,r:+$('c-rr').value||0})}
    const sn=$('c-sn').value.trim(),sv=numOf($('c-sv').value),sp=numOf($('c-sp').value),sl=$('c-sl').value===''?sv:Math.min(sv||9999,numOf($('c-sl').value));
    const obj={id:c.id,name,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
@@ -190,3 +192,6 @@ async function migrateClients(){
  }catch(e){state.migrated=false}
  state.quiet=false;
 }
+
+/* телефон для порівняння: лише цифри, +380… і 0… вважаються однаковими (останні 9 цифр) */
+function phoneKey(p){const d=digitsOf(p);return d.length<7?'':d.length>=9?d.slice(-9):d}

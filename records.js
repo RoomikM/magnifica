@@ -392,7 +392,7 @@ async function resolveClient(a){
  if(!nm&&!ph)return '';
  const dg=digitsOf(ph);
  let c=null;
- if(dg.length>=7)c=state.clients.find(x=>digitsOf(x.phone)===dg);
+ if(phoneKey(ph))c=state.clients.find(x=>phoneKey(x.phone)===phoneKey(ph));
  if(!c&&nm)c=state.clients.find(x=>x.name.trim().toLowerCase()===nm.toLowerCase());
  if(c)return c.id;
  if(!can('clientsEdit')&&!can('apptAdd'))return '';
