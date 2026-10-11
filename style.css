@@ -724,3 +724,8 @@ html:not([data-mode="desktop"]) .pm-a{display:none}
 .nophone{color:var(--danger);font-weight:800}
 
 .sumline .cexp{display:flex;gap:6px}
+
+#p-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+html[data-mode="desktop"] #p-chips{grid-template-columns:repeat(3,minmax(0,1fr))}
+#p-chips .chip{border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:left;min-width:0}
+#p-chips .chip small{flex:0 0 auto}

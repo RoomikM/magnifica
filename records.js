@@ -132,10 +132,10 @@ function renderRecords(){
 
 /* ---------- форма запису ---------- */
 const defTime=d=>{if(d!==todayKey())return'10:00';const h=Math.min(20,Math.max(9,new Date().getHours()+1));return pad(h)+':00'};
-function freqServices(svs){
+function freqServices(svs,n){
  const cnt={};state.appts.forEach(a=>(a.items||[]).forEach(i=>cnt[i.sid]=(cnt[i.sid]||0)+1));
  const sorted=svs.slice().sort((x,y)=>(cnt[y.id]||0)-(cnt[x.id]||0));
- return sorted.slice(0,4);
+ return sorted.slice(0,n||(isMobile()?6:9));
 }
 function defaultMaster(){
  const ms=masters();
@@ -198,11 +198,11 @@ function openAppt(init){
   const shown=freqServices(avail);
   a.items.forEach(i=>{const s=avail.find(x=>x.id===i.sid);if(s&&!shown.includes(s))shown.push(s)});
   $('p-chips').innerHTML=shown.map(s=>`<button class="chip" type="button" data-sid="${esc(s.id)}" aria-pressed="${a.items.some(i=>i.sid===s.id)}">${esc(s.name)}<small>${s.price?fmt(s.price)+' ₴':'—'}</small></button>`).join('')||(svs.length?'<span class="hint" style="margin:0">За цим майстром не закріплено жодної роботи.</span>':'<span class="hint" style="margin:0">Додайте послуги в налаштуваннях (шестерня).</span>');
-  const rest=avail.filter(s=>!shown.includes(s)&&!a.items.some(i=>i.sid===s.id));
+  /* випадаючий список містить УСІ роботи без винятків (навіть ті, що вже є кнопками, вибрані чи закріплені за іншим майстром) */
   const more=$('p-more');
-  more.hidden=!rest.length;
-  more.innerHTML='<option value="">＋ Інша робота…</option>'+rest.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.price?' — '+fmt(s.price)+' ₴':''}</option>`).join('');
- };
+  more.hidden=!svs.length;
+  more.innerHTML='<option value="">＋ Усі роботи…</option>'+svs.map(s=>`<option value="${esc(s.id)}">${a.items.some(i=>i.sid===s.id)?'✓ ':''}${esc(s.name)}${s.price?' — '+fmt(s.price)+' ₴':''}</option>`).join('');
+};
  const drawSel=()=>{
   $('p-sel').innerHTML=a.items.map((it,i)=>`<div class="selrow"><span class="sname"><i class="dot" style="background:${colorOf(svIndex(it.sid))}"></i>${esc(it.name)}${it.sid==='x'?' <small class="xtag">додатково</small>':''}</span><input data-i="${i}" inputmode="numeric" value="${it.price||''}" placeholder="0" aria-label="Ціна: ${esc(it.name)}"><button class="rm" type="button" data-rm="${i}" aria-label="Прибрати">✕</button></div>`).join('');
   upTotal();
