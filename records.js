@@ -393,8 +393,12 @@ async function resolveClient(a){
  const dg=digitsOf(ph);
  let c=null;
  if(phoneKey(ph))c=state.clients.find(x=>phoneKey(x.phone)===phoneKey(ph));
- if(!c&&nm)c=state.clients.find(x=>x.name.trim().toLowerCase()===nm.toLowerCase());
- if(c)return c.id;
+ if(!c&&nm)c=state.clients.find(x=>nameIs(x,nm));
+ if(c){
+  /* той самий клієнт назвався інакше: запам'ятовуємо як додаткове ім'я, щоб не плодити дублів */
+  if(nm&&!nameIs(c,nm)&&can('clientsEdit')){try{await Store.saveClient(c.id,{...c,aka:(c.aka||[]).concat([nm]).slice(-8)})}catch(e){}}
+  return c.id;
+ }
  if(!can('clientsEdit')&&!can('apptAdd'))return '';
  const obj={id:newId(),name:nm||ph,phone:ph,bd:'',note:'',reviews:[],created:Date.now()};
  await Store.saveClient(obj.id,obj);

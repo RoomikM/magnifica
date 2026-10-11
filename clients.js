@@ -5,7 +5,7 @@ let _csKey=null,_csVal=null;
 function clientStatsMap(){
  if(_csKey&&_csKey[0]===state.appts&&_csKey[1]===state.clients)return _csVal;
  const byName=new Map(),map=new Map();
- state.clients.forEach(c=>{byName.set(String(c.name||'').trim().toLowerCase(),c.id);map.set(c.id,{list:[]})});
+ state.clients.forEach(c=>{byName.set(String(c.name||'').trim().toLowerCase(),c.id);(c.aka||[]).forEach(n=>{const k=String(n).trim().toLowerCase();if(k&&!byName.has(k))byName.set(k,c.id)});map.set(c.id,{list:[]})});
  state.appts.forEach(a=>{
   const id=a.cid&&map.has(a.cid)?a.cid:(a.name?byName.get(String(a.name).trim().toLowerCase()):null);
   if(id)map.get(id).list.push(a);
@@ -61,7 +61,7 @@ const isLapsed=s=>s.visits>0&&!s.upcoming&&s.last&&s.last<addDays(todayKey(),-la
 function clientsListHtml(){
  const u=state.ui,q=u.cq.trim().toLowerCase(),dq=digitsOf(q),st=clientStatsMap();
  let l=state.clients.map(c=>({c,s:st.get(c.id)}));
- if(q)l=l.filter(x=>x.c.name.toLowerCase().includes(q)||(dq.length>=3&&digitsOf(x.c.phone).includes(dq))||String(x.c.note||'').toLowerCase().includes(q));
+ if(q)l=l.filter(x=>x.c.name.toLowerCase().includes(q)||(x.c.aka||[]).some(n=>n.toLowerCase().includes(q))||(dq.length>=3&&digitsOf(x.c.phone).includes(dq))||String(x.c.note||'').toLowerCase().includes(q));
  if(u.cflt==='regular')l=l.filter(x=>x.s.visits>=4);
  else if(u.cflt==='new')l=l.filter(x=>x.s.visits<=1);
  else if(u.cflt==='risk')l=l.filter(x=>x.s.noshow>=1);
@@ -97,6 +97,7 @@ function openClient(idOrObj,opt){
  const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'';
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Клієнт':'Новий клієнт'}</h2>${closeBtn}</div>
   <label class="lf"><span>ПІБ</span><input id="c-name" value="${esc(c.name)}" maxlength="80" autocomplete="off"></label>
+  <label class="lf"><span>Також відгукується (інші імена, через кому)</span><input id="c-aka" value="${esc((c.aka||[]).join(', '))}" maxlength="120" autocomplete="off" placeholder="напр. Юля, Юлічка"></label>
   <div class="fgrid" style="grid-template-columns:1.2fr 1fr"><label class="lf ph-f"><span>Телефон</span><input id="c-phone" type="tel" inputmode="tel" value="${esc(c.phone)}" maxlength="24" autocomplete="off"></label>
    <label class="lf"><span>День народження</span><input id="c-bd" type="date" value="${esc(c.bd||'')}"></label></div>
   ${c.phone?`<div style="margin:-4px 0 10px"><a class="btn sm" href="tel:${esc(digitsOf(c.phone)?'+'.concat(digitsOf(c.phone).replace(/^0/,'380')):c.phone)}">Подзвонити</a></div>`:''}
@@ -152,7 +153,8 @@ function openClient(idOrObj,opt){
    if(pk){const dup=state.clients.find(x=>x.id!==c.id&&phoneKey(x.phone)===pk);if(dup){err('Клієнт з таким телефоном уже є: «'+dup.name+'». Дублікат створити не можна.');return}}
    const t=$('c-rt').value.trim();if(t){c.reviews.push({d:todayKey(),text:t,r:+$('c-rr').value||0})}
    const sn=$('c-sn').value.trim(),sv=numOf($('c-sv').value),sp=numOf($('c-sp').value),sl=$('c-sl').value===''?sv:Math.min(sv||9999,numOf($('c-sl').value));
-   const obj={id:c.id,name,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
+   const aka=[...new Set($('c-aka').value.split(/[,;]/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==name.toLowerCase()))];
+   const obj={id:c.id,name,aka,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
    const b=$('c-save');b.disabled=true;b.textContent='Зберігаю…';
    try{const r=await Store.saveClient(obj.id,obj);closeSheet();savedToast(r,'Клієнта збережено')}
    catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
@@ -183,7 +185,7 @@ async function migrateClients(){
    const dg=digitsOf(last.phone);
    let c=null;
    if(dg.length>=7)c=state.clients.find(x=>digitsOf(x.phone)===dg);
-   if(!c&&last.name)c=state.clients.find(x=>x.name.trim().toLowerCase()===last.name.trim().toLowerCase());
+   if(!c&&last.name)c=state.clients.find(x=>nameIs(x,last.name));
    let id;
    if(c)id=c.id;
    else{id=hashId(key);await Store.saveClient(id,{id,name:last.name||last.phone,phone:last.phone||'',bd:'',note:'',reviews:[],created:Date.now()})}
@@ -195,3 +197,6 @@ async function migrateClients(){
 
 /* телефон для порівняння: лише цифри, +380… і 0… вважаються однаковими (останні 9 цифр) */
 function phoneKey(p){const d=digitsOf(p);return d.length<7?'':d.length>=9?d.slice(-9):d}
+
+/* клієнт відгукується на ім'я: основне або одне з додаткових (Юля / Юлія / Юлічка) */
+function nameIs(c,n){n=String(n||'').trim().toLowerCase();return !!n&&(String(c.name||'').trim().toLowerCase()===n||(c.aka||[]).some(a=>String(a).trim().toLowerCase()===n))}
