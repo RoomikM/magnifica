@@ -125,6 +125,7 @@ $('records').addEventListener('change',e=>{if(e.target.matches('[data-mf]')){sta
 $('clients').addEventListener('click',e=>{
  const t=e.target;let b;
  if((b=t.closest('[data-cs]'))){state.ui.csort=b.dataset.cs;renderClients();return}
+ if((b=t.closest('[data-cexp]'))){exportClients(b.dataset.cexp);return}
  if((b=t.closest('[data-cf]'))){state.ui.cflt=b.dataset.cf;renderClients();return}
  if((b=t.closest('[data-cid]'))){openClient(b.dataset.cid,{msg:b.dataset.msg})}
 });

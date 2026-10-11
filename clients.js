@@ -82,7 +82,7 @@ function renderClients(){
  el.innerHTML=`<div class="tools"><input class="search" id="cq" type="search" placeholder="Пошук: ім’я, телефон, нотатка" value="${esc(u.cq)}" autocomplete="off"></div>
   <div class="tools"><div class="seg" role="group" aria-label="Сортування">${[['name','Ім’я'],['last','Остання'],['visits','Візити'],['spent','Сума']].map(([k,n])=>`<button data-cs="${k}" aria-pressed="${u.csort===k}">${n}</button>`).join('')}</div>
    <div class="seg" role="group" aria-label="Фільтр">${[['all','Усі'],['regular','Постійні'],['new','Нові'],['risk','Пропуски'],['lapsed','Давно не були ('+state.clients.filter(c=>isLapsed(clientStatsMap().get(c.id)||{})).length+')']].concat(phoneRestricted()?[]:[['nophone','Без телефону ('+state.clients.filter(c=>!String(c.phone||'').trim()).length+')']]).map(([k,n])=>`<button data-cf="${k}" aria-pressed="${u.cflt===k}">${n}</button>`).join('')}</div></div>
-  <div class="sumline"><span>Клієнтів: <b>${state.clients.length}</b></span></div>${bd}
+  <div class="sumline"><span>Клієнтів: <b>${state.clients.length}</b></span>${state.clients.length?`<span class="cexp"><button class="btn sm" type="button" data-cexp="csv" title="Таблиця для Excel / Google Таблиць">⬇ CSV</button><button class="btn sm" type="button" data-cexp="vcf" title="Контакти для телефона / Google Контактів">⬇ Контакти</button></span>`:''}</div>${bd}
   <div class="card" id="clList">${clientsListHtml()}</div>`;
 }
 
@@ -210,3 +210,21 @@ function phoneKey(p){const d=digitsOf(p);return d.length<7?'':d.length>=9?d.slic
 
 /* клієнт відгукується на ім'я: основне або одне з додаткових (Юля / Юлія / Юлічка) */
 function nameIs(c,n){n=String(n||'').trim().toLowerCase();return !!n&&(String(c.name||'').trim().toLowerCase()===n||(c.aka||[]).some(a=>String(a).trim().toLowerCase()===n))}
+
+/* вивантаження бази клієнтів: CSV (Excel / Google Таблиці, UTF-8) і vCard (імпорт у контакти телефона) */
+function exportClients(kind){
+ const list=state.clients.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'uk')),ph=!phoneRestricted(),st=clientStatsMap(),stamp=todayKey();
+ const intl=p=>{const d=phoneIntl(p);return d?'+'+d:''};
+ if(kind==='vcf'){
+  const v=list.map(c=>{
+   const n=String(c.name||'').trim().split(/\s+/),fam=n[0]||'',giv=n.slice(1).join(' ');
+   const e=x=>String(x||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/[,;]/g,m=>'\\'+m);
+   return ['BEGIN:VCARD','VERSION:3.0','N:'+e(fam)+';'+e(giv)+';;;','FN:'+e(c.name),ph&&c.phone?'TEL;TYPE=CELL:'+intl(c.phone):'',c.bd?'BDAY:'+c.bd:'',c.note?'NOTE:'+e(c.note):'','END:VCARD'].filter(Boolean).join('\r\n');
+  }).join('\r\n')+'\r\n';
+  saveFile('magnifica-clients-'+stamp+'.vcf',v,'text/vcard');toast('Контакти вивантажено: '+list.length);return;
+ }
+ const q=x=>{x=String(x==null?'':x);return /[;"\n\r]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x};
+ const head=['№','Імʼя (ПІБ)',...(ph?['Телефон','Телефон (+380)']:[]),'День народження','Нотатка','Візитів','Останній візит','Витрачено, ₴','Абонемент (залишок)','Створено'];
+ const rows=list.map((c,i)=>{const s=st.get(c.id)||{};return [i+1,c.name,...(ph?[c.phone||'',intl(c.phone)]:[]),c.bd||'',c.note||'',s.visits||0,s.last||'',Math.round(s.spent||0),c.sub?c.sub.name+' ('+c.sub.left+'/'+c.sub.visits+')':'',c.created?new Date(+c.created).toISOString().slice(0,10):''].map(q).join(';')});
+ saveFile('magnifica-clients-'+stamp+'.csv','\ufeff'+[head.map(q).join(';'),...rows].join('\r\n'),'text/csv');toast('Клієнтів вивантажено: '+list.length);
+}

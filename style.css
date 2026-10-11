@@ -722,3 +722,5 @@ html:not([data-mode="desktop"]) .pm-a{display:none}
 .cl:has(>.cl-no){grid-template-columns:auto auto minmax(0,1fr) auto;gap:8px}
 
 .nophone{color:var(--danger);font-weight:800}
+
+.sumline .cexp{display:flex;gap:6px}
