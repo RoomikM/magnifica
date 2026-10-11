@@ -699,7 +699,7 @@ html.rep-open body{overflow:hidden}
 
 .mc:not(.mc-s) .ev .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.25}
 
-.ev.ic .n{display:none}.ev.ic .s{color:var(--text);font-weight:600}.ev.cancel.ic .s{text-decoration:line-through}
+.ev.ic .n{font-size:11.5px}.ev.ic .s{color:var(--text);font-weight:600}.ev.cancel.ic .s{text-decoration:line-through}
 
 .ptitle{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pmonth{font-size:20px;font-weight:800;letter-spacing:-.01em;color:var(--text);line-height:1.15}

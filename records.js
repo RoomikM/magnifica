@@ -30,7 +30,7 @@ function trange(lists){
 }
 function gutter(sh,eh,hpx){let h='';for(let x=sh;x<=eh;x++)h+=`<div class="tl-hr" style="top:${(x-sh)*hpx}px">${pad(x)}:00</div>`;return `<div class="tl-hours" style="height:${(eh-sh)*hpx}px">${h}</div>`}
 function evHtml(a,compact,pos,inCol){
- const nm=a.name||a.phone||'Без імені';
+ const nm=inCol?(String(a.name||'').trim().split(/\s+/)[0]||a.phone||'Без імені'):(a.name||a.phone||'Без імені');
  const fut=!counted(a)&&isOk(a);
  const sub=(!inCol&&mName(a)?mName(a)+' · ':'')+itemsText(a);
  return `<button class="ev ${inCol?'ic':''} ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="${pos||''}--ec:${firstColor(a)}"><b>${esc(a.t)}</b>${compact?'':'<span class="p">'+money(a.total||0)+'</span>'}<span class="n">${esc(nm)}${STATUS_TXT[a.st]&&!compact?' · '+STATUS_TXT[a.st]:''}</span><span class="s">${esc(sub)}</span></button>`;
