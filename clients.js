@@ -69,7 +69,7 @@ function clientsListHtml(){
  const by={name:(a,b)=>a.c.name.localeCompare(b.c.name,'uk'),last:(a,b)=>(b.s.last||'').localeCompare(a.s.last||''),visits:(a,b)=>b.s.visits-a.s.visits,spent:(a,b)=>b.s.spent-a.s.spent};
  l.sort(by[u.csort]||by.name);
  if(!l.length)return `<div class="empty">${state.clients.length?'Нікого не знайдено':'Клієнтів ще немає. Вони додаються автоматично при створенні запису, або натисніть «Додати клієнта».'}</div>`;
- return l.slice(0,500).map(({c,s})=>`<button class="cl" data-cid="${esc(c.id)}"><span class="av">${esc(initials(c.name))}</span>
+ return l.slice(0,500).map(({c,s},i)=>`<button class="cl" data-cid="${esc(c.id)}"><span class="cl-no">${i+1}</span><span class="av">${esc(initials(c.name))}</span>
   <span class="cl-m"><span class="cl-n">${esc(c.name)}</span><span class="cl-s">${phoneRestricted()?'':esc(c.phone||'без телефону')+' · '}${esc(clientBrief(c,s))}</span></span><span class="cl-b">${badges(s)}</span></button>`).join('');
 }
 function renderClients(){
