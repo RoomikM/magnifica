@@ -66,11 +66,12 @@ function clientsListHtml(){
  else if(u.cflt==='new')l=l.filter(x=>x.s.visits<=1);
  else if(u.cflt==='risk')l=l.filter(x=>x.s.noshow>=1);
  else if(u.cflt==='lapsed')l=l.filter(x=>isLapsed(x.s));
+ else if(u.cflt==='nophone')l=l.filter(x=>!String(x.c.phone||'').trim());
  const by={name:(a,b)=>a.c.name.localeCompare(b.c.name,'uk'),last:(a,b)=>(b.s.last||'').localeCompare(a.s.last||''),visits:(a,b)=>b.s.visits-a.s.visits,spent:(a,b)=>b.s.spent-a.s.spent};
  l.sort(by[u.csort]||by.name);
  if(!l.length)return `<div class="empty">${state.clients.length?'Нікого не знайдено':'Клієнтів ще немає. Вони додаються автоматично при створенні запису, або натисніть «Додати клієнта».'}</div>`;
  return l.slice(0,500).map(({c,s},i)=>`<button class="cl" data-cid="${esc(c.id)}"><span class="cl-no">${i+1}</span><span class="av">${esc(initials(c.name))}</span>
-  <span class="cl-m"><span class="cl-n">${esc(c.name)}</span><span class="cl-s">${phoneRestricted()?'':esc(c.phone||'без телефону')+' · '}${esc(clientBrief(c,s))}</span></span><span class="cl-b">${badges(s)}</span></button>`).join('');
+  <span class="cl-m"><span class="cl-n">${esc(c.name)}</span><span class="cl-s">${phoneRestricted()?'':(c.phone?esc(c.phone):'<b class="nophone">⚠ немає телефону</b>')+' · '}${esc(clientBrief(c,s))}</span></span><span class="cl-b">${badges(s)}</span></button>`).join('');
 }
 function renderClients(){
  const el=$('clients');if(!el)return;
@@ -80,7 +81,7 @@ function renderClients(){
  const bd=bds.length?`<div class="card"><h2>Найближчі дні народження</h2><div class="caption">Протягом 30 днів</div>${bds.map(x=>`<button class="exrow" data-cid="${esc(x.c.id)}" data-msg="bd"><div><div class="t">${esc(x.c.name)}</div><div class="m">${x.c.bd.slice(8,10)}.${x.c.bd.slice(5,7)}${x.c.phone?' · '+esc(x.c.phone):''}</div></div><div class="a">${x.n===0?'сьогодні':'через '+x.n+' дн.'}</div></button>`).join('')}</div>`:'';
  el.innerHTML=`<div class="tools"><input class="search" id="cq" type="search" placeholder="Пошук: ім’я, телефон, нотатка" value="${esc(u.cq)}" autocomplete="off"></div>
   <div class="tools"><div class="seg" role="group" aria-label="Сортування">${[['name','Ім’я'],['last','Остання'],['visits','Візити'],['spent','Сума']].map(([k,n])=>`<button data-cs="${k}" aria-pressed="${u.csort===k}">${n}</button>`).join('')}</div>
-   <div class="seg" role="group" aria-label="Фільтр">${[['all','Усі'],['regular','Постійні'],['new','Нові'],['risk','Пропуски'],['lapsed','Давно не були ('+state.clients.filter(c=>isLapsed(clientStatsMap().get(c.id)||{})).length+')']].map(([k,n])=>`<button data-cf="${k}" aria-pressed="${u.cflt===k}">${n}</button>`).join('')}</div></div>
+   <div class="seg" role="group" aria-label="Фільтр">${[['all','Усі'],['regular','Постійні'],['new','Нові'],['risk','Пропуски'],['lapsed','Давно не були ('+state.clients.filter(c=>isLapsed(clientStatsMap().get(c.id)||{})).length+')']].concat(phoneRestricted()?[]:[['nophone','Без телефону ('+state.clients.filter(c=>!String(c.phone||'').trim()).length+')']]).map(([k,n])=>`<button data-cf="${k}" aria-pressed="${u.cflt===k}">${n}</button>`).join('')}</div></div>
   <div class="sumline"><span>Клієнтів: <b>${state.clients.length}</b></span></div>${bd}
   <div class="card" id="clList">${clientsListHtml()}</div>`;
 }
