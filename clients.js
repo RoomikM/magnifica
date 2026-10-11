@@ -149,12 +149,15 @@ function openClient(idOrObj,opt){
   $('c-save').addEventListener('click',async()=>{
    const name=$('c-name').value.trim();
    if(!name){err('Вкажіть ім’я клієнта.');return}
-   const pk=phoneKey($('c-phone').value);
+   const pv=$('c-phone').value.trim(),np=ex&&pv===String(ex.phone||'').trim()?{ok:true,v:pv}:normPhone(pv);
+   if(!np.ok){err(np.err);return}
+   $('c-phone').value=np.v;
+   const pk=phoneKey(np.v);
    if(pk){const dup=state.clients.find(x=>x.id!==c.id&&phoneKey(x.phone)===pk);if(dup){err('Клієнт з таким телефоном уже є: «'+dup.name+'». Дублікат створити не можна.');return}}
    const t=$('c-rt').value.trim();if(t){c.reviews.push({d:todayKey(),text:t,r:+$('c-rr').value||0})}
    const sn=$('c-sn').value.trim(),sv=numOf($('c-sv').value),sp=numOf($('c-sp').value),sl=$('c-sl').value===''?sv:Math.min(sv||9999,numOf($('c-sl').value));
    const aka=(c.aka||[]).filter(x=>String(x).trim().toLowerCase()!==name.toLowerCase());
-   const obj={id:c.id,name,aka,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
+   const obj={id:c.id,name,aka,phone:np.v,bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
    const b=$('c-save');b.disabled=true;b.textContent='Зберігаю…';
    try{
     const r=await Store.saveClient(obj.id,obj);

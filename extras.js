@@ -14,6 +14,13 @@ function fillTpl(k,v){
  v=Object.assign({disc:(state.cfg&&state.cfg.bdDisc)||10},v);
  return tplText(k).replace(/\{(\w+)\}/g,(m,n)=>v[n]!=null?v[n]:m);
 }
+/* український мобільний: 0XXXXXXXXX (10 цифр, код оператора). Приймаємо +380…/380…/пробіли/дефіси й зберігаємо як 0XXXXXXXXX */
+function normPhone(p){
+ let d=digitsOf(p);if(!d)return{ok:true,v:''};
+ if(d.length===12&&d.startsWith('380'))d='0'+d.slice(3);else if(d.length===11&&d.startsWith('80'))d=d.slice(1);
+ if(!/^0(39|50|63|66|67|68|73|75|77|9[1-9])\d{7}$/.test(d))return{ok:false,v:d,err:d.length!==10?'Номер має містити 10 цифр, наприклад 0970000000 (зараз цифр: '+d.length+').':'Не схоже на український мобільний номер. Формат: 0970000000.'};
+ return{ok:true,v:d};
+}
 function phoneIntl(p){
  let d=digitsOf(p);if(!d)return'';
  if(d.startsWith('00'))d=d.slice(2);

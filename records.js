@@ -168,7 +168,7 @@ function openAppt(init){
   <div class="slots" id="p-slots" role="group" aria-label="Вільні години"></div>
   <div class="hint" id="p-tc" style="margin:4px 0 0"></div>
   <div class="lf acw"><span>Клієнт (ПІБ)</span><input id="p-name" autocomplete="off" placeholder="почніть вводити ім’я або телефон" value="${esc(a.name)}" maxlength="80"><div class="ac" id="p-ac" hidden></div><div class="cinfo" id="p-ci" hidden></div></div>
-  <label class="lf ph-f"><span>Телефон</span><input id="p-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="необов’язково" value="${esc(a.phone)}" maxlength="24"></label>
+  <label class="lf ph-f"><span>Телефон</span><input id="p-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="0970000000" value="${esc(a.phone)}" maxlength="24"></label>
   ${ms.length||lockM?`<label class="lf"><span>Майстер</span><select id="p-m" ${lockM?'disabled':''}><option value="">— не вказано —</option>${ms.map(m=>`<option value="${esc(m.id)}" ${m.id===a.m?'selected':''}>${esc(m.name)}</option>`).join('')}${a.m&&!ms.some(m=>m.id===a.m)?`<option value="${esc(a.m)}" selected>${esc(a.mn||personName(a.m)||'Майстер')}</option>`:''}</select></label>`:''}
   <div class="lbl2">Роботи</div><div class="chips" id="p-chips"></div>
   <select class="more" id="p-more" aria-label="Інші роботи"></select>
@@ -366,7 +366,9 @@ function openAppt(init){
   err('');
   const b=$('p-save');b.disabled=true;b.textContent='Зберігаю…';
   try{
-   a.name=$('p-name').value.trim();a.phone=$('p-phone').value.trim();
+   const pv=$('p-phone').value.trim(),np=ex&&pv===String(ex.phone||'').trim()?{ok:true,v:pv}:normPhone(pv);
+   if(!np.ok){err(np.err);b.disabled=false;b.textContent='Зберегти';return}
+   a.name=$('p-name').value.trim();a.phone=np.v;$('p-phone').value=np.v;
    const cid=await resolveClient(a);
    const obj={id:a.id||newId(),d,t,dur,cid,name:a.name,phone:a.phone,m,mn:m?personName(m,a.mn):'',note:$('p-note').value.trim(),
     items:a.items.map(i=>({sid:i.sid,name:i.name,price:+i.price||0})),total:total(),disc:a.subOn?0:(+a.disc||0),subUsed:false,st:a.st,created:a.created||Date.now()};
