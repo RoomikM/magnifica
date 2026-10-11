@@ -98,7 +98,6 @@ function openClient(idOrObj,opt){
  const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'';
  showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Клієнт':'Новий клієнт'}</h2>${closeBtn}</div>
   <label class="lf"><span>ПІБ</span><input id="c-name" value="${esc(c.name)}" maxlength="80" autocomplete="off"></label>
-  <label class="lf"><span>Також відгукується (інші імена, через кому)</span><input id="c-aka" value="${esc((c.aka||[]).join(', '))}" maxlength="120" autocomplete="off" placeholder="напр. Юля, Юлічка"></label>
   <div class="fgrid" style="grid-template-columns:1.2fr 1fr"><label class="lf ph-f"><span>Телефон</span><input id="c-phone" type="tel" inputmode="tel" value="${esc(c.phone)}" maxlength="24" autocomplete="off"></label>
    <label class="lf"><span>День народження</span><input id="c-bd" type="date" value="${esc(c.bd||'')}"></label></div>
   ${c.phone?`<div style="margin:-4px 0 10px"><a class="btn sm" href="tel:${esc(digitsOf(c.phone)?'+'.concat(digitsOf(c.phone).replace(/^0/,'380')):c.phone)}">Подзвонити</a></div>`:''}
@@ -154,10 +153,17 @@ function openClient(idOrObj,opt){
    if(pk){const dup=state.clients.find(x=>x.id!==c.id&&phoneKey(x.phone)===pk);if(dup){err('Клієнт з таким телефоном уже є: «'+dup.name+'». Дублікат створити не можна.');return}}
    const t=$('c-rt').value.trim();if(t){c.reviews.push({d:todayKey(),text:t,r:+$('c-rr').value||0})}
    const sn=$('c-sn').value.trim(),sv=numOf($('c-sv').value),sp=numOf($('c-sp').value),sl=$('c-sl').value===''?sv:Math.min(sv||9999,numOf($('c-sl').value));
-   const aka=[...new Set($('c-aka').value.split(/[,;]/).map(x=>x.trim()).filter(x=>x&&x.toLowerCase()!==name.toLowerCase()))];
+   const aka=(c.aka||[]).filter(x=>String(x).trim().toLowerCase()!==name.toLowerCase());
    const obj={id:c.id,name,aka,phone:$('c-phone').value.trim(),bd:$('c-bd').value||'',note:$('c-note').value.trim(),reviews:c.reviews,created:c.created||Date.now(),sub:sv>0?{name:sn||'Абонемент',visits:sv,price:sp,left:sl}:null};
    const b=$('c-save');b.disabled=true;b.textContent='Зберігаю…';
-   try{const r=await Store.saveClient(obj.id,obj);closeSheet();savedToast(r,'Клієнта збережено')}
+   try{
+    const r=await Store.saveClient(obj.id,obj);
+    /* перейменування: прив'язуємо до картки й оновлюємо ім'я в записах цього клієнта, щоб календар і історія були узгоджені */
+    if(ex&&name!==ex.name&&can('apptEdit')){
+     const ap=state.appts.filter(a=>(a.cid===c.id||(!a.cid&&nameIs(ex,a.name)))&&(a.name!==name||a.cid!==c.id));
+     try{for(const a of ap)await Store.saveAppt(a.id,{...a,cid:c.id,name})}catch(e){}
+    }
+    closeSheet();savedToast(r,'Клієнта збережено')}
    catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
   });
  }
