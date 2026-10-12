@@ -77,7 +77,7 @@ const state={
  ui:{aview:lsGet('magnifica-aview','day'),adate:todayKey(),afilter:'future',aq:'',mf:'',range:'all',pmonth:todayKey().slice(0,7),emonth:todayKey().slice(0,7),
   exsub:'exp',cq:'',csort:'name',cflt:'all'}
 };
-let SV=[],SVT=[];
+let SV=[],SVT=[],GT=[];
 
 /* ---------- права ---------- */
 const isOwner=()=>state.role==='owner';
@@ -155,7 +155,8 @@ function svGroups(S,total){
    }
    if(m)k=m;
   }
-  let g=map.get(k);if(!g){g={key:k,name:sv.group||sv.name,amount:0,count:0,archived:true,first:sv.id};map.set(k,g)}
+  let g=map.get(k);if(!g){g={key:k,name:sv.group||sv.name,amount:0,count:0,archived:true,first:sv.id,ids:[]};map.set(k,g)}
+  g.ids.push(sv.id);
   g.amount+=x.amount;g.count+=x.count;if(!sv.archived)g.archived=false;
  });
  return [...map.values()].filter(g=>!g.archived||g.amount>0).map(g=>({...g,share:total?g.amount/total*100:0}));
@@ -377,14 +378,15 @@ function donut(S,total){
 
 /* ---------- таблиці ---------- */
 const cell=(v,cls='')=>v?`<td class="${cls}">${fmt(v)}</td>`:`<td class="zero ${cls}">—</td>`;
-const head=()=>`<thead><tr><th>Період</th>${SVT.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th class="total">Разом</th></tr></thead>`;
-const rowHtml=(r,lab,attrs='')=>`<tr ${attrs}><td>${lab}</td>${SVT.map(s=>cell(r[s.id])).join('')}${cell(r.total,'total')}</tr>`;
+const gv=(r,g)=>g.ids.reduce((t,id)=>t+(+r[id]||0),0);
+const head=()=>`<thead><tr><th>Період</th>${GT.map(g=>`<th>${esc(g.name)}</th>`).join('')}<th class="total">Разом</th></tr></thead>`;
+const rowHtml=(r,lab,attrs='')=>`<tr ${attrs}><td>${lab}</td>${GT.map(g=>cell(gv(r,g))).join('')}${cell(r.total,'total')}</tr>`;
 function dailyTable(rows){
  if(!rows.length)return '<div class="empty">Ще немає днів із записами</div>';
  let ym='',body='';
  rows.slice().reverse().forEach(r=>{
   const m=r.key.slice(0,7);
-  if(m!==ym){ym=m;body+=`<tr class="sep"><td colspan="${SVT.length+2}">${MONTHS[+m.slice(5,7)-1]} ${m.slice(0,4)}</td></tr>`}
+  if(m!==ym){ym=m;body+=`<tr class="sep"><td colspan="${GT.length+2}">${MONTHS[+m.slice(5,7)-1]} ${m.slice(0,4)}</td></tr>`}
   body+=rowHtml(r,ddmm(r.key),`class="edit" data-key="${r.key}" tabindex="0" role="button" aria-label="Відкрити день ${esc(r.label)}"`);
  });
  return `<div class="table-note">Суми в гривнях (₴). Торкніться дня, щоб відкрити його.</div><div class="table-wrap"><table>${head()}<tbody>${body}</tbody></table></div>`;
@@ -513,6 +515,7 @@ function renderAll(){
  SV=svList();
  const D=compute(),S=D.summary;
  SVT=SV.filter(s=>S.services[s.id].amount>0);if(!SVT.length)SVT=SV.filter(s=>!s.archived);
+ GT=svGroups(S.services,S.total).filter(g=>g.amount>0);if(!GT.length)GT=svGroups(S.services,S.total);
  $('period').textContent=S.from&&can('stats')?full(S.from)+' — '+full(S.to):'—';
  if(can('stats')){
   put('profit',profitHtml(D));
