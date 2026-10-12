@@ -733,3 +733,9 @@ html[data-mode="desktop"] #p-chips{grid-template-columns:repeat(3,minmax(0,1fr))
 th{white-space:normal;line-height:1.15;vertical-align:bottom;overflow-wrap:break-word;hyphens:manual;padding-left:2px;padding-right:2px}
 th:first-child{white-space:nowrap}
 html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;padding-right:2px}html:not([data-mode="desktop"]) .table-wrap td:first-child{padding-left:6px}html:not([data-mode="desktop"]) .table-wrap td:last-child{padding-right:6px}
+/* таблиці: заголовки вгорі по центру, суми по центру, колонки через одну світліші */
+.table-wrap th,.table-wrap td{text-align:center}
+.table-wrap th:first-child,.table-wrap td:first-child{text-align:left}
+.table-wrap th{vertical-align:top}
+.table-wrap tbody td:nth-child(even):not(.total):not([colspan]),.table-wrap thead th:nth-child(even):not(.total){background:color-mix(in srgb,var(--text) 7%,var(--card-solid))}
+.table-wrap tr.edit:hover td:not(.total){background:var(--accent-soft)}
