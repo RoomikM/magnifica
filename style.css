@@ -729,3 +729,7 @@ html:not([data-mode="desktop"]) .pm-a{display:none}
 html[data-mode="desktop"] #p-chips{grid-template-columns:repeat(3,minmax(0,1fr))}
 #p-chips .chip{border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:left;min-width:0}
 #p-chips .chip small{flex:0 0 auto}
+/* заголовки колонок можуть переноситись на кілька рядків, щоб таблиця вміщалась в екран */
+th{white-space:normal;line-height:1.15;vertical-align:bottom;overflow-wrap:break-word;hyphens:manual;padding-left:2px;padding-right:2px}
+th:first-child{white-space:nowrap}
+html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;padding-right:2px}html:not([data-mode="desktop"]) .table-wrap td:first-child{padding-left:6px}html:not([data-mode="desktop"]) .table-wrap td:last-child{padding-right:6px}
