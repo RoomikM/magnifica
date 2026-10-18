@@ -739,3 +739,9 @@ html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;p
 .table-wrap th{vertical-align:top}
 .table-wrap tbody td:nth-child(even):not(.total):not([colspan]),.table-wrap thead th:nth-child(even):not(.total){background:color-mix(in srgb,var(--text) 7%,var(--card-solid))}
 .table-wrap tr.edit:hover td:not(.total){background:var(--accent-soft)}
+
+.wkpay{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.wkh{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.wkrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;color:var(--muted)}
+.wkrow b{color:var(--text);font-variant-numeric:tabular-nums}
+.wkrow.wkt{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px;font-weight:800}

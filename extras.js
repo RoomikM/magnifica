@@ -131,17 +131,34 @@ function mastersData(){
  rows.forEach(r=>{r.share=total?r.rev/total*100:0});
  return{rows:rows.sort((a,b)=>b.rev-a.rev),total};
 }
+/* тижні місяця (пн–нд, обрізані межами місяця) */
+function monthWeeks(mk){
+ const [y,m]=mk.split('-').map(Number),last=mk+'-'+pad(new Date(Date.UTC(y,m,0)).getUTCDate()),out=[];
+ let from=mk+'-01';
+ while(from<=last){
+  let to=addDays(keyOf(mondayOf(from)),6);if(to>last)to=last;
+  out.push({from,to});from=addDays(to,1);
+ }
+ return out;
+}
+function weekPaysHtml(r,weeks){
+ const rows=weeks.map((w,i)=>{
+  const v=state.sals.filter(x=>x.sid===r.id&&x.d>=w.from&&x.d<=w.to).reduce((t,x)=>t+(+x.amount||0),0);
+  return`<div class="wkrow"><span>${i+1} тиждень · ${ddmm(w.from)}–${ddmm(w.to)}</span><b>${v?money(v):'—'}</b></div>`;
+ }).join('');
+ return`<div class="wkpay"><div class="wkh">Виплати по тижнях</div>${rows}<div class="wkrow wkt"><span>Разом за місяць</span><b>${money(r.paid)}</b></div></div>`;
+}
 function renderMasters(){
  const el=$('masters');if(!el)return;
  if(!canTab('masters')){el.innerHTML='';return}
- const u=state.ui,[y,m]=u.mmonth.split('-').map(Number),D=mastersData(),fin=can('salaryView');
+ const u=state.ui,[y,m]=u.mmonth.split('-').map(Number),D=mastersData(),fin=can('salaryView'),wks=u.mmode==='month'?monthWeeks(u.mmonth):null;
  const nav=`<div class="tools"><div class="seg" role="group" aria-label="Період"><button data-mm="month" aria-pressed="${u.mmode==='month'}">Місяць</button><button data-mm="all" aria-pressed="${u.mmode==='all'}">Весь час</button></div>
   ${u.mmode==='month'?`<div class="navdate grow"><button class="iconbtn" data-mn="-1" aria-label="Попередній">‹</button><span class="lbl">${MONTHS[m-1]} ${y}</span><button class="iconbtn" data-mn="1" aria-label="Наступний">›</button></div><button class="btn sm" data-mn="0">Цей місяць</button>`:''}</div>`;
  const cards=D.rows.map(r=>`<div class="card mcard"><div class="payc-h"><span class="av" style="background:${r.id?personColor(r.id):'var(--accent-soft)'};color:#fff">${esc(initials(r.name))}</span><div><b>${esc(r.name)}</b><div class="m">${r.share?r.share.toFixed(0)+'% виручки · ':''}${r.hours?durText(Math.round(r.hours*60))+' роботи':'без візитів'}</div></div><div class="mrev">${money(r.rev)}</div></div>
   <div class="tiles"><div><span>Візитів</span><b>${r.n}</b></div><div><span>Середній чек</span><b>${r.avg?money(Math.round(r.avg)):'—'}</b></div><div><span>Клієнтів</span><b>${r.clients}</b></div>
    <div><span>Пропусків</span><b>${r.noshow}</b></div><div><span>Скасувань</span><b>${r.cancel}</b></div><div><span>Попереду</span><b>${r.up}</b></div></div>
   <div class="bar"><i style="width:${Math.min(100,r.share).toFixed(1)}%;background:${r.id?personColor(r.id):'var(--accent)'}"></i></div>
-  ${fin?`<div class="sumline" style="margin-top:8px"><span>Виплачено за період: <b>${money(r.paid)}</b></span>${r.rate?`<span>${r.custom?'За ставками видів робіт':r.pct+'% від виручки'}: <b>${money(r.owe)}</b></span><span>${r.bal?(r.bal.left>0?'Залишок до виплати (всього): <b>'+money(r.bal.left)+'</b>':r.bal.left<0?'Переплата: <b>'+money(-r.bal.left)+'</b>':'Розраховано'):''}</span>`:''}</div>`:''}</div>`).join('');
+  ${fin?`<div class="sumline" style="margin-top:8px"><span>Виплачено за період: <b>${money(r.paid)}</b></span>${r.rate?`<span>${r.custom?'За ставками видів робіт':r.pct+'% від виручки'}: <b>${money(r.owe)}</b></span><span>${r.bal?(r.bal.left>0?'Залишок до виплати (всього): <b>'+money(r.bal.left)+'</b>':r.bal.left<0?'Переплата: <b>'+money(-r.bal.left)+'</b>':'Розраховано'):''}</span>`:''}</div>${wks&&r.id?weekPaysHtml(r,wks):''}`:''}</div>`).join('');
  el.innerHTML=nav+`<div class="sumline"><span>Майстрів: <b>${D.rows.length}</b></span><span>Виручка по записах: <b>${money(D.total)}</b></span></div>`+(cards||'<div class="card"><div class="empty">Поки немає записів із майстрами. Створіть працівників з позначкою «Майстер» у налаштуваннях.</div></div>');
 }
 $('masters').addEventListener('click',e=>{
