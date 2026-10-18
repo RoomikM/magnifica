@@ -141,6 +141,19 @@ function renderRecords(){
 }
 
 /* ---------- форма запису ---------- */
+const normT=v=>{
+ v=String(v||'').trim();let h,mi;
+ const m=v.match(/^(\d{1,2})\s*[:.,;\s-]\s*(\d{1,2})$/);
+ if(m){h=+m[1];mi=+m[2]}
+ else{const dg=v.replace(/\D/g,'');
+  if(dg.length===1||dg.length===2){h=+dg;mi=0}
+  else if(dg.length===3){h=+dg[0];mi=+dg.slice(1)}
+  else if(dg.length===4){h=+dg.slice(0,2);mi=+dg.slice(2)}
+  else return ''}
+ if(h>23||mi>59)return '';
+ return pad(h)+':'+pad(mi);
+};
+
 const defTime=d=>{if(d!==todayKey())return'10:00';const h=Math.min(20,Math.max(9,new Date().getHours()+1));return pad(h)+':00'};
 function freqServices(svs,n){
  const cnt={};state.appts.forEach(a=>(a.items||[]).forEach(i=>cnt[i.sid]=(cnt[i.sid]||0)+1));
@@ -309,18 +322,7 @@ function openAppt(init){
  showInfo();
 
  /* вибір часу: поле + сітка слотів + стрілки */
- const normT=v=>{
-  v=String(v||'').trim();let h,mi;
-  const m=v.match(/^(\d{1,2})\s*[:.,;\s-]\s*(\d{1,2})$/);
-  if(m){h=+m[1];mi=+m[2]}
-  else{const dg=v.replace(/\D/g,'');
-   if(dg.length===1||dg.length===2){h=+dg;mi=0}
-   else if(dg.length===3){h=+dg[0];mi=+dg.slice(1)}
-   else if(dg.length===4){h=+dg.slice(0,2);mi=+dg.slice(2)}
-   else return ''}
-  if(h>23||mi>59)return '';
-  return pad(h)+':'+pad(mi);
- };
+
  const drawSlots=()=>{
   const box=$('p-slots');if(!box)return;
   const d=$('p-d').value,dur=+$('p-dur').value||60,mSel=$('p-m'),m=mSel?mSel.value:(a.m||'');
