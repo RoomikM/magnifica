@@ -110,7 +110,8 @@ $('records').addEventListener('click',e=>{
  }
  if((b=t.closest('[data-d]'))){u.adate=b.dataset.d;u.aview='day';lsSet('magnifica-aview','day');renderRecords();return}
   if(t.closest('[data-wait]')){openWait();return}
- if((b=t.closest('[data-id]'))){const a=state.appts.find(x=>x.id===b.dataset.id);if(a)openAppt(a);return}
+ if(t.closest('[data-priv]')){openTask();return}
+ if((b=t.closest('[data-id]'))){const a=state.appts.find(x=>x.id===b.dataset.id);if(a)openAppt(a);else{const k=state.tasks.find(x=>x.id===b.dataset.id);if(k&&canPriv())openTask(k)}return}
  const col=t.closest('.tl-col');
  if(col&&can('apptAdd')){
   const r=col.getBoundingClientRect(),hpx=+col.dataset.hpx,sh=+col.dataset.sh;
@@ -219,7 +220,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab
 /* ---------- запуск ---------- */
 function setView(v){document.documentElement.setAttribute('data-view',v)}
 function resetData(){
- state.days=new Map();state.baseline={};state.appts=[];state.wait=[];state.exps=[];state.sals=[];state.salsOk=false;state.clients=[];state.staff=[];state.cfg=null;
+ state.days=new Map();state.baseline={};state.appts=[];state.tasks=[];state.wait=[];state.exps=[];state.sals=[];state.salsOk=false;state.clients=[];state.staff=[];state.cfg=null;
  state.newAppts=0;seenAppts.clear();apptsInit=false;drawBadge();state.me=null;state.role='owner';state.perms={};state.apptsLoaded=false;state.clientsLoaded=false;state.migrated=false;
 }
 document.addEventListener('click',e=>{const b=e.target.closest('.skin-dot');if(b)setSkin(b.dataset.skin)});
@@ -251,7 +252,7 @@ addEventListener('error',e=>{
  let unsubData=null,unsubMe=null,sig='';
  const stopData=()=>{if(unsubData){unsubData();unsubData=null}};
  const ready=()=>{if(state.status!=='ready'){state.status='ready'}renderAll()};
- const upd=k=>v=>{if(k==='appts')v=stripPhones('a',v);else if(k==='clients')v=stripPhones('c',v);else if(k==='wait')v=stripPhones('w',v);state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
+ const upd=k=>v=>{if(k==='appts'){state.tasks=v.filter(x=>x.pv);v=stripPhones('a',v.filter(x=>!x.pv))}else if(k==='clients')v=stripPhones('c',v);else if(k==='wait')v=stripPhones('w',v);state[k]=v;if(k==='appts')state.apptsLoaded=true;if(k==='clients')state.clientsLoaded=true;if(state.status==='ready')renderAll();if(k==='appts'||k==='clients')migrateClients()};
  function startData(me,uid){
   const staff=!!me&&!me.owner;
   state.me=me&&me.link?{...me,id:me.link}:me;state.role=staff?'staff':'owner';state.perms=staff?(me.perms||{}):{};
@@ -263,7 +264,7 @@ addEventListener('error',e=>{
   unsubData=Store.subscribe({
    days:m=>{state.days=m;ready()},
    baseline:b=>{state.baseline=b;if(state.status==='ready')renderAll()},
-   appts:l=>{trackNew(l);upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:l=>{state.salsOk=true;upd('sals')(l)},clients:upd('clients'),staff:l=>upd('staff')(l.filter(x=>!x.link)),
+   appts:l=>{trackNew(l.filter(x=>!x.pv));upd('appts')(l)},wait:upd('wait'),exps:upd('exps'),sals:l=>{state.salsOk=true;upd('sals')(l)},clients:upd('clients'),staff:l=>upd('staff')(l.filter(x=>!x.link)),
    cfg:c=>{state.cfg=c;if(checkKick())return;if(state.status==='ready')renderAll()},
    error:code=>{state.status=code==='permission-denied'?'denied':'error';renderAll()}
   },{perms:staff?state.perms:null,uid,mid:me&&me.link||uid});

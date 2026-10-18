@@ -4,10 +4,10 @@
 const ST_TXT={ok:'активний',cancel:'скасовано',noshow:'не прийшов'};
 const byId=(list,id)=>list.find(x=>x.id===id)||{};
 const LOG_WRAPS={
- saveAppt:(id,d)=>{const o=state.appts.find(x=>x.id===id);
+ saveAppt:(id,d)=>{if(d.pv)return[state.tasks.some(x=>x.id===id)?'Змінено приватне завдання':'Створено приватне завдання',`${full(d.d)} ${d.t}`];const o=state.appts.find(x=>x.id===id);
   const st=o?(o.st!==d.st?' · статус: '+ST_TXT[d.st||'ok']:''):(d.st&&d.st!=='ok'?' · '+ST_TXT[d.st]:'');
   return[o?'Змінено запис':'Створено запис',`${d.name||'без імені'} · ${full(d.d)} ${d.t} · ${money(d.total||0)}${d.mn?' · '+d.mn:''}${st}`]},
- deleteAppt:id=>{const o=byId(state.appts,id);return['Видалено запис',`${o.name||'без імені'}${o.d?' · '+full(o.d)+' '+o.t:''}`]},
+ deleteAppt:id=>{if(state.tasks.some(x=>x.id===id))return['Видалено приватне завдання',''];const o=byId(state.appts,id);return['Видалено запис',`${o.name||'без імені'}${o.d?' · '+full(o.d)+' '+o.t:''}`]},
  saveClient:(id,d)=>[state.clients.some(x=>x.id===id)?'Змінено клієнта':'Додано клієнта',d.name],
  deleteClient:id=>['Видалено клієнта',byId(state.clients,id).name||''],
  saveExp:(id,d)=>[state.exps.some(x=>x.id===id)?'Змінено витрату':'Додано витрату',`${catName(d)} · ${money(d.amount||0)}${d.note?' · '+d.note:''}`],

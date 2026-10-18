@@ -745,3 +745,6 @@ html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;p
 .wkrow{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;color:var(--muted)}
 .wkrow b{color:var(--text);font-variant-numeric:tabular-nums}
 .wkrow.wkt{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px;font-weight:800}
+
+.ev.pv,.ag.pv{--ec:var(--muted);color:var(--muted);border-left:3px dotted var(--muted);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 18%,var(--card-solid)) 0 7px,color-mix(in srgb,var(--muted) 9%,var(--card-solid)) 7px 14px)}
+.ev.pv .n,.ag.pv .ag-n{font-weight:700;font-style:italic}

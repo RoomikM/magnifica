@@ -3,9 +3,10 @@
 
 const byTime=(a,b)=>toMin(a.t)-toMin(b.t)||String(a.name||'').localeCompare(String(b.name||''));
 const visAppts=()=>state.appts.filter(a=>!state.ui.mf||a.m===state.ui.mf);
-const apptsOn=d=>visAppts().filter(a=>a.d===d).sort(byTime);
-const activeSum=l=>l.filter(isOk).reduce((s,a)=>s+(+a.total||0),0);
-const activeN=l=>l.filter(isOk).length;
+const visTasks=()=>state.tasks.filter(a=>!state.ui.mf||a.m===state.ui.mf);
+const apptsOn=d=>visAppts().concat(visTasks()).filter(a=>a.d===d).sort(byTime);
+const activeSum=l=>l.filter(a=>!a.pv).filter(isOk).reduce((s,a)=>s+(+a.total||0),0);
+const activeN=l=>l.filter(a=>!a.pv).filter(isOk).length;
 const itemsText=a=>(a.items||[]).map(i=>i.name).join(', ');
 const firstColor=a=>colorOf(svIndex(a.items&&a.items[0]&&a.items[0].sid));
 const mName=a=>a.mn||personName(a.m)||'';
@@ -29,7 +30,14 @@ function trange(lists){
  return [Math.max(0,sh),Math.min(24,eh)];
 }
 function gutter(sh,eh,hpx){let h='';for(let x=sh;x<=eh;x++)h+=`<div class="tl-hr" style="top:${(x-sh)*hpx}px">${pad(x)}:00</div>`;return `<div class="tl-hours" style="height:${(eh-sh)*hpx}px">${h}</div>`}
+/* приватне завдання: інші бачать лише «Зайнято», якщо поставлено «Приватно» */
+const taskText=a=>canPriv()||!a.hide?(a.title||'Приватне'):'Зайнято';
+function taskEv(a,compact,pos){
+ const lock=canPriv()&&a.hide?'🔒 ':'';
+ return `<button class="ev pv" data-id="${esc(a.id)}" style="${pos||''}"><b>${esc(a.t)}</b><span class="n">${lock}${esc(taskText(a))}</span>${compact?'':'<span class="s">'+durText(+a.dur||60)+'</span>'}</button>`;
+}
 function evHtml(a,compact,pos,inCol){
+ if(a.pv)return taskEv(a,compact,pos);
  const nm=inCol?(String(a.name||'').trim().split(/\s+/)[0]||a.phone||'Без імені'):(a.name||a.phone||'Без імені');
  const fut=!counted(a)&&isOk(a);
  const sub=(!inCol&&mName(a)?mName(a)+' · ':'')+itemsText(a);
@@ -50,7 +58,7 @@ const masterCols=l=>{
  const ms=masters();
  if(ms.length<2||state.ui.mf||!(isOwner()||state.perms.apptView))return null;
  const cols=ms.map(m=>({id:m.id,name:m.name,list:l.filter(a=>a.m===m.id)}));
- const free=l.filter(a=>!ms.some(m=>m.id===a.m));
+ const free=l.filter(a=>!a.pv&&!ms.some(m=>m.id===a.m));
  if(free.length)cols.push({id:'',name:'Без майстра',list:free});
  return cols;
 };
@@ -71,6 +79,7 @@ function agenda(list,empty){
  groups.forEach((l,d)=>{
   h+=`<div class="ag-day ${d===todayKey()?'today':''}"><b>${esc(dayLabel(d))}</b><span>${activeN(l)} зап. · ${money(activeSum(l))}</span></div>`;
   l.forEach(a=>{
+   if(a.pv){h+=`<button class="ag pv" data-id="${esc(a.id)}"><div class="ag-t"><b>${esc(a.t)}</b><span>${durText(+a.dur||60)}</span></div><div><div class="ag-n">${canPriv()&&a.hide?'🔒 ':''}${esc(taskText(a))}</div><div class="ag-s">${canPriv()?'Приватне, не стосується роботи':''}</div></div><div></div></button>`;return}
    const fut=!counted(a)&&isOk(a);
    const sub=(mName(a)?mName(a)+' · ':'')+itemsText(a)+(a.name&&a.phone?' · '+a.phone:'');
    h+=`<button class="ag ${isOk(a)?'':'cancel'} ${fut?'future':''}" data-id="${esc(a.id)}" style="--ec:${firstColor(a)}">
@@ -86,19 +95,20 @@ function masterSelect(){
  if(ms.length<2&&!state.ui.mf)return '';
  return `<select class="mini" data-mf aria-label="Майстер"><option value="">Усі майстри</option>${ms.map(m=>`<option value="${esc(m.id)}" ${state.ui.mf===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`;
 }
+const privBtn=()=>canPriv()?'<button class="btn sm" data-priv>🔒 Приватне</button>':'';
 const waitBtn=()=>{const n=waitActive().length;return `<button class="btn sm" data-wait>Очікування${n?' ('+n+')':''}</button>`};
 function recToolbar(){
  const u=state.ui,v=u.aview;
  const seg=`<div class="seg" role="group" aria-label="Вигляд"><button data-v="day" aria-pressed="${v==='day'}">День</button><button data-v="week" aria-pressed="${v==='week'}">Тиждень</button><button data-v="list" aria-pressed="${v==='list'}">Список</button></div>`;
  if(v==='list'){
   const f=u.afilter;
-  return `<div class="tools">${seg}<div class="seg" role="group" aria-label="Фільтр"><button data-f="future" aria-pressed="${f==='future'}">Майбутні</button><button data-f="past" aria-pressed="${f==='past'}">Минулі</button><button data-f="all" aria-pressed="${f==='all'}">Усі</button></div>${masterSelect()}${waitBtn()}</div>
+  return `<div class="tools">${seg}<div class="seg" role="group" aria-label="Фільтр"><button data-f="future" aria-pressed="${f==='future'}">Майбутні</button><button data-f="past" aria-pressed="${f==='past'}">Минулі</button><button data-f="all" aria-pressed="${f==='all'}">Усі</button></div>${masterSelect()}${privBtn()}${waitBtn()}</div>
    <div class="tools"><input class="search" id="aq" type="search" placeholder="Пошук: ім’я, телефон, робота" value="${esc(u.aq)}" autocomplete="off"></div>`;
  }
  let lbl;
  if(v==='day')lbl=dayLabel(u.adate);
  else{const m=keyOf(mondayOf(u.adate));lbl=full(m).slice(0,5)+' — '+full(addDays(m,6)).slice(0,5)+'.'+addDays(m,6).slice(0,4)}
- return `<div class="tools">${seg}${masterSelect()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button></div>`;
+ return `<div class="tools">${seg}${masterSelect()}${privBtn()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button></div>`;
 }
 function recBody(){
  if(!canView())return '<div class="card"><div class="empty">У вас є право лише додавати записи. Перегляд списку вимкнено адміністратором.</div></div>';
@@ -315,17 +325,17 @@ function openAppt(init){
   const box=$('p-slots');if(!box)return;
   const d=$('p-d').value,dur=+$('p-dur').value||60,mSel=$('p-m'),m=mSel?mSel.value:(a.m||'');
   const cur=normT($('p-t').value);
-  const busy=isDate(d)?state.appts.filter(x=>x.id!==a.id&&x.d===d&&isOk(x)&&(x.m||'')===m):[];
+  const busy=isDate(d)?state.appts.concat(state.tasks).filter(x=>x.id!==a.id&&x.d===d&&isOk(x)&&(x.m||'')===m):[];
   const hitAt=s=>busy.find(x=>toMin(x.t)<s+dur&&toMin(x.t)+(+x.dur||60)>s);
   const now=nowKey();
   let h='';
   for(let s=480;s<=1290;s+=30){
    const t=pad(Math.floor(s/60))+':'+pad(s%60),hit=hitAt(s);
-   h+=`<button type="button" class="slot${hit?' busy':''}${isDate(d)&&(d+' '+t)<now?' past':''}${cur===t?' on':''}" data-t="${t}" aria-pressed="${cur===t}"${hit?` title="Зайнято: ${esc(hit.t)} ${esc(hit.name||'')}"`:''}>${t}</button>`;
+   h+=`<button type="button" class="slot${hit?' busy':''}${isDate(d)&&(d+' '+t)<now?' past':''}${cur===t?' on':''}" data-t="${t}" aria-pressed="${cur===t}"${hit?` title="Зайнято: ${esc(hit.t)} ${esc(hit.pv?'':hit.name||'')}"`:''}>${t}</button>`;
   }
   box.innerHTML=h;
   const c=$('p-tc'),ch=cur?hitAt(toMin(cur)):null;
-  c.textContent=!cur?'Вкажіть час, напр. 1430 або 14:30':ch?'Зайнято: '+ch.t+'–'+pad(Math.floor((toMin(ch.t)+(+ch.dur||60))/60)%24)+':'+pad((toMin(ch.t)+(+ch.dur||60))%60)+' '+(ch.name||'без імені'):'';
+  c.textContent=!cur?'Вкажіть час, напр. 1430 або 14:30':ch?'Зайнято: '+ch.t+'–'+pad(Math.floor((toMin(ch.t)+(+ch.dur||60))/60)%24)+':'+pad((toMin(ch.t)+(+ch.dur||60))%60)+' '+(ch.pv?'':(ch.name||'без імені')):'';
   c.classList.toggle('warn',!!ch);
  };
  const setT=v=>{$('p-t').value=v;drawSlots()};
@@ -358,6 +368,12 @@ function openAppt(init){
   if(!a.items.length){err('Оберіть хоча б одну роботу.');return}
   const dur=+$('p-dur').value||60;
   const mSel=$('p-m');const m=mSel?mSel.value:(a.m||'');
+  const moved=!ex||ex.d!==d||ex.t!==t||(+ex.dur||60)!==dur||(ex.m||'')!==m;
+  if(moved&&a.st==='ok'){
+   const s1=toMin(t),e1=s1+dur;
+   const blk=state.tasks.find(x=>(x.m||'')===m&&x.d===d&&toMin(x.t)<e1&&toMin(x.t)+(+x.dur||60)>s1);
+   if(blk){err('Цей час зайнятий ('+blk.t+'–'+hhmm(toMin(blk.t)+(+blk.dur||60))+'). Оберіть інший час.');return}
+  }
   if(m&&a.st==='ok'&&!a.warned){
    const s0=toMin(t),e0=s0+dur;
    const clash=state.appts.find(x=>x.id!==a.id&&x.m===m&&x.d===d&&isOk(x)&&toMin(x.t)<e0&&toMin(x.t)+(+x.dur||60)>s0);
@@ -424,4 +440,45 @@ function mordMove(v){
  [ms[i],ms[j]]=[ms[j],ms[i]];
  const rest=byStaffOrder(state.staff).map(x=>x.id).filter(x=>!ms.includes(x));
  cfgDoc().staffOrder=ms.concat(rest);saveCfg();renderAll();mordSheet();
+}
+
+/* ---------- приватні завдання (займають години в колонці майстра, не рахуються в статистиці) ---------- */
+function openTask(init){
+ if(state.status!=='ready'||!canPriv())return;
+ const ex=init&&init.id?init:null;
+ const ms=masters();
+ const defM=()=>{const me=myMid();if(ms.some(m=>m.id===me))return me;const last=lsGet('magnifica-lastm','');return ms.some(m=>m.id===last)?last:(ms[0]?ms[0].id:'')};
+ const a=ex?{...ex}:{d:state.ui.adate||todayKey(),t:defTime(state.ui.adate||todayKey()),dur:60,m:defM(),title:'',hide:false};
+ const durs=[15,30,45,60,90,120,150,180,240,360,480];if(!durs.includes(+a.dur))durs.push(+a.dur);durs.sort((x,y)=>x-y);
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">${ex?'Приватне завдання':'Нове приватне завдання'}</h2>${closeBtn}</div>
+  <div class="note">Не стосується роботи, але ці години зайняті: запис клієнта на цей час неможливий.</div>
+  <label class="lf"><span>Що заплановано</span><input id="k-title" autocomplete="off" maxlength="80" placeholder="лікар, діти, справи…" value="${esc(a.title||'')}"></label>
+  <div class="fgrid"><label class="lf"><span>Дата</span><input type="date" id="k-d" value="${esc(a.d)}"></label>
+   <label class="lf"><span>Час</span><input type="text" id="k-t" inputmode="numeric" autocomplete="off" placeholder="14:30" maxlength="5" value="${esc(a.t)}"></label>
+   <label class="lf"><span>Тривалість</span><select id="k-dur">${durs.map(m=>`<option value="${m}" ${m===+a.dur?'selected':''}>${durText(m)}</option>`).join('')}</select></label></div>
+  ${ms.length?`<label class="lf"><span>Колонка майстра</span><select id="k-m">${ms.map(m=>`<option value="${esc(m.id)}" ${m.id===a.m?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>`:''}
+  <label class="chk"><input type="checkbox" id="k-hide" ${a.hide?'checked':''}> Приватно (для інших користувачів буде просто «Зайнято»)</label>
+  <div class="err" id="k-err" role="alert" hidden></div>
+  <div class="actions">${ex?'<button class="btn danger" id="k-del">Видалити</button>':''}<button class="btn primary" id="k-save">Зберегти</button></div>`);
+ const err=m=>{const e=$('k-err');e.textContent=m;e.hidden=!m};
+ if(ex)arm($('k-del'),'Видалити',async()=>{await Store.deleteAppt(ex.id);closeSheet();toast('Завдання видалено');renderAll()});
+ let warned=false;
+ $('k-save').addEventListener('click',async()=>{
+  const d=$('k-d').value,t=normT($('k-t').value),dur=+$('k-dur').value||60,m=$('k-m')?$('k-m').value:'';
+  if(!isDate(d)){err('Оберіть дату.');return}
+  if(!t){err('Вкажіть час, напр. 14:30.');return}
+  const title=$('k-title').value.trim();
+  if(!title){err('Напишіть, що заплановано.');return}
+  const s0=toMin(t),e0=s0+dur;
+  const clash=state.appts.find(x=>x.m===m&&x.d===d&&isOk(x)&&toMin(x.t)<e0&&toMin(x.t)+(+x.dur||60)>s0);
+  if(clash&&!warned){warned=true;err('У цей час уже є запис клієнта о '+clash.t+' ('+(clash.name||'без імені')+'). Натисніть «Зберегти» ще раз, щоб підтвердити.');return}
+  const b=$('k-save');b.disabled=true;b.textContent='Зберігаю…';
+  try{
+   const obj={id:a.id||newId(),pv:1,d,t,dur,m,title,hide:$('k-hide').checked,st:'ok',total:0,items:[],created:a.created||Date.now()};
+   if(ex&&ex.by)obj.by=ex.by;
+   const r=await Store.saveAppt(obj.id,obj);
+   state.ui.adate=d;closeSheet();renderAll();
+   savedToast(r,'Збережено · '+ddmm(d)+' '+t);
+  }catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
+ });
 }

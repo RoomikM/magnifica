@@ -72,7 +72,7 @@ const digitsOnly=el=>el.addEventListener('input',()=>{el.value=el.value.replace(
 const put=(id,html)=>{const el=$(id);if(el)el.innerHTML=html};
 
 const state={
- days:new Map(),baseline:{},appts:[],wait:[],exps:[],sals:[],clients:[],staff:[],cfg:null,
+ days:new Map(),baseline:{},appts:[],tasks:[],wait:[],exps:[],sals:[],clients:[],staff:[],cfg:null,
  status:'loading',tab:'overview',user:null,role:'owner',perms:{},me:null,
  ui:{aview:lsGet('magnifica-aview','day'),adate:todayKey(),afilter:'future',aq:'',mf:'',range:'all',pmonth:todayKey().slice(0,7),emonth:todayKey().slice(0,7),
   exsub:'exp',cq:'',csort:'name',cflt:'all'}
@@ -81,6 +81,8 @@ let SV=[],SVT=[],GT=[];
 
 /* ---------- права ---------- */
 const isOwner=()=>state.role==='owner';
+/* приватні завдання: створюють і змінюють лише власник та адміністратори (бачать і редагують усі записи) */
+const canPriv=()=>isOwner()||(can('apptView')&&can('apptEdit'));
 const can=p=>isOwner()||!!state.perms[p];
 const canView=()=>can('apptView')||can('apptOwn');
 function canTab(t){
