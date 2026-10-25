@@ -757,3 +757,15 @@ html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;p
 .cal-d.today{border-color:var(--accent);color:var(--accent)}
 .cal-d.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .cal-d.has::after{content:"";position:absolute;left:50%;bottom:5px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:currentColor;opacity:.6}
+@media(max-width:600px){
+ .tools:has(>.navdate){flex-wrap:nowrap;gap:5px}
+ .tools:has(>.navdate) .navdate{gap:2px;min-width:0}
+ .tools:has(>.navdate) .navdate .lbl{font-size:13px}
+ .tools:has(>.navdate)>.btn.sm{padding-left:9px;padding-right:9px;white-space:nowrap;flex:none}
+ .tools:has(>.navdate) .iconbtn{flex:none}
+}
+@media(max-width:600px){
+ .tools:has(>.navdate) .iconbtn{width:28px;min-width:28px;padding:0}
+ .tools:has(>.navdate) .navdate .lbl{font-size:12.5px;overflow:visible}
+ .tools:has(>.navdate)>.btn.sm{padding-left:7px;padding-right:7px;font-size:12.5px}
+}

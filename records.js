@@ -106,9 +106,9 @@ function recToolbar(){
    <div class="tools"><input class="search" id="aq" type="search" placeholder="Пошук: ім’я, телефон, робота" value="${esc(u.aq)}" autocomplete="off"></div>`;
  }
  let lbl;
- if(v==='day')lbl=dayLabel(u.adate);
+ if(v==='day')lbl=isMobile()?WDS[dow(u.adate)]+', '+full(u.adate):dayLabel(u.adate);
  else{const m=keyOf(mondayOf(u.adate));lbl=full(m).slice(0,5)+' — '+full(addDays(m,6)).slice(0,5)+'.'+addDays(m,6).slice(0,4)}
- return `<div class="tools">${seg}${masterSelect()}${privBtn()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button><button class="btn sm" data-cal>📅 Календар</button></div>`;
+ return `<div class="tools">${seg}${masterSelect()}${privBtn()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button><button class="btn sm" data-cal>Календар</button></div>`;
 }
 function recBody(){
  if(!canView())return '<div class="card"><div class="empty">У вас є право лише додавати записи. Перегляд списку вимкнено адміністратором.</div></div>';
