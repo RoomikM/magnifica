@@ -64,13 +64,14 @@ export default {
     const user = await verifyFirebaseToken(data.token, await getJwks());
     if (!user) return reply({ error: 'auth' }, 401);
     const subs = (Array.isArray(data.subs) ? data.subs : []).filter((s) => s && okEndpoint(s.endpoint)).slice(0, 10);
-    const gone = []; let sent = 0;
+    const gone = [], statuses = []; let sent = 0;
     await Promise.all(subs.map(async (s) => {
       try {
         const r = await fetch(s.endpoint, { method: 'POST', headers: { Authorization: await vapidAuth(s.endpoint, env), TTL: '86400', Urgency: 'high', 'Content-Length': '0' } });
+        statuses.push(r.status);
         if (r.status === 404 || r.status === 410) gone.push(s.endpoint); else if (r.ok) sent++;
       } catch (e) { /* пропускаємо */ }
     }));
-    return reply({ ok: true, sent, gone });
+    return reply({ ok: true, sent, gone, statuses });
   }
 };

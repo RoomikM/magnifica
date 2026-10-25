@@ -29,16 +29,22 @@ async function pushDisable(){
  try{await Store.deletePush(pushDocId())}catch(e){}
  lsSet('magnifica-pushon','');
 }
-/* адміністратор: сповістити майстра mid (без очікування, помилки ігноруються) */
+/* адміністратор: сповістити майстра mid. Повертає короткий підсумок для повідомлення на екрані */
 async function pushNotify(mid){
  try{
-  if(!pushSupported()||!mid||mid===myMid())return;
-  const subs=(await Store.getPush(mid)).filter(x=>x.sub&&x.sub.endpoint);
-  if(!subs.length)return;
-  const token=await Store.idToken();if(!token)return;
-  const r=await fetch(PUSH().url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,subs:subs.map(x=>x.sub)})});
-  if(!r.ok)return;
+  if(!pushSupported()||!mid||mid===myMid())return null;
+  let subs;
+  try{subs=(await Store.getPush(mid)).filter(x=>x.sub&&x.sub.endpoint)}
+  catch(e){return{msg:'Сповіщення майстру: немає доступу до бази (перевірте правила Firestore для push)'}}
+  if(!subs.length)return{msg:'Майстер ще не ввімкнув сповіщення у своєму кабінеті'};
+  const token=await Store.idToken();if(!token)return{msg:'Сповіщення майстру: не вдалося перевірити вхід'};
+  let r;
+  try{r=await fetch(PUSH().url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,subs:subs.map(x=>x.sub)})})}
+  catch(e){return{msg:'Сповіщення майстру: сервер сповіщень недоступний'}}
+  if(!r.ok)return{msg:'Сповіщення майстру: сервер відхилив запит ('+r.status+')'};
   const j=await r.json();
   (j.gone||[]).forEach(ep=>{const d=subs.find(x=>x.sub.endpoint===ep);if(d)Store.deletePush(d.id).catch(()=>{})});
- }catch(e){}
+  if(j.sent>0)return{msg:'Сповіщення майстру надіслано'};
+  return{msg:'Сповіщення не доставлено'+((j.statuses&&j.statuses.length)?' (код '+j.statuses.join(', ')+')':'')+(j.gone&&j.gone.length?'. Підписка майстра застаріла, нехай увімкне сповіщення знову':'')};
+ }catch(e){return null}
 }
