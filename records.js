@@ -69,7 +69,7 @@ function masterDay(date,cols,sh,eh,hpx){
  const head=sm
   ?c=>`<div class="mc-h" title="${esc(c.name)}"><i class="av">${esc(sInit(c.name))}</i><span><em>${activeN(c.list)}</em></span></div>`
   :c=>`<div class="mc-h"><i class="av">${esc(initials(c.name))}</i><b>${esc(c.name)}</b><span><em>${activeN(c.list)}</em> зап.${activeSum(c.list)?' · '+money(activeSum(c.list)):''}</span></div>`;
- const bar=(isMobile()||isOwner())?`<div class="mc-bar">${isOwner()?'<button class="btn sm" type="button" data-mord>⇅ Порядок майстрів</button>':''}${isMobile()?`<button class="btn sm" type="button" data-mcw>${sm?'⤢ Розгорнути календар':'⤡ Стиснути календар'}</button>`:''}</div>`:'';
+ const bar=(isMobile()||isOwner())?`<div class="mc-bar">${isOwner()?'<button class="btn sm" type="button" data-mord>⇅ Порядок майстрів</button>':''}${isMobile()?`<button class="btn sm" type="button" data-mcw>${sm?'⤡ Стиснути календар':'⤢ Розгорнути календар'}</button>`:''}</div>`:'';
  return bar+`<div class="mc ${sm?'mc-s':''}"><div class="mc-in"><div class="mc-g"><div class="mc-gh"></div>${gutter(sh,eh,hpx)}</div>${cols.map(c=>`<div class="mc-c">${head(c)}${tlCol(date,c.list,sh,eh,hpx,true,c.id)}</div>`).join('')}</div></div>`;
 }
 function agenda(list,empty){
