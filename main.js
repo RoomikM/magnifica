@@ -123,6 +123,77 @@ $('records').addEventListener('click',e=>{
 $('records').addEventListener('input',e=>{if(e.target.id==='aq'){state.ui.aq=e.target.value;put('recBody',recBody())}});
 $('records').addEventListener('change',e=>{if(e.target.matches('[data-mf]')){state.ui.mf=e.target.value;renderRecords()}});
 
+/* гортання днів у «Записах» (телефон, вигляд «День»): куб слідом за пальцем; у розгорнутому календарі — лише коли колонки докручені до краю */
+{
+ const root=$('records'),EASE='transform .32s cubic-bezier(.2,.8,.2,1)';
+ let sx=0,sy=0,st=0,dir=0,W=0,card=null,ghost=null,stage=null,lastX=0,lastT=0,vel=0,mc=null,sl0=0;
+ const place=p=>{
+  const th=-dir*p*90;
+  card.style.transform=`translateZ(${-W/2}px) rotateY(${th}deg) translateZ(${W/2}px)`;
+  ghost.style.transform=`translateZ(${-W/2}px) rotateY(${th+dir*90}deg) translateZ(${W/2}px)`;
+  card.style.filter=`brightness(${1-.35*p})`;ghost.style.filter=`brightness(${.65+.35*p})`;
+ };
+ const cleanup=()=>{
+  if(ghost){ghost.remove();ghost=null}
+  if(stage){stage.style.perspective='';stage.style.position='';stage.style.overflowX=''}
+  if(card)card.style.cssText='';
+  st=0;dir=0;card=null;stage=null;
+ };
+ const begin=d=>{
+  stage=$('recBody');card=stage&&stage.firstElementChild;if(!card){st=0;return}
+  dir=d;W=stage.offsetWidth;
+  const cur=state.ui.adate;state.ui.adate=addDays(cur,d);
+  const h=document.createElement('div');h.innerHTML=recBody();state.ui.adate=cur;
+  ghost=h.firstElementChild;if(!ghost){st=0;return}
+  stage.style.position='relative';stage.style.perspective='1500px';stage.style.overflowX='clip';
+  ghost.style.cssText='position:absolute;top:0;left:0;width:100%;backface-visibility:hidden;pointer-events:none';
+  card.style.backfaceVisibility='hidden';card.style.willChange='transform';
+  stage.appendChild(ghost);place(0);st=2;
+ };
+ const finish=commit=>{
+  if(st!==2){cleanup();return}
+  st=3;card.style.transition=EASE;ghost.style.transition=EASE;
+  if(commit){
+   card.style.transform=`translateZ(${-W/2}px) rotateY(${-dir*90}deg) translateZ(${W/2}px)`;
+   ghost.style.transform=`translateZ(${-W/2}px) rotateY(0deg) translateZ(${W/2}px)`;card.style.filter='brightness(.65)';ghost.style.filter='none';
+   const d=dir;setTimeout(()=>{state.ui.adate=addDays(state.ui.adate,d);cleanup();renderRecords()},330);
+  }else{place(0);setTimeout(cleanup,330)}
+ };
+ const edgeOk=d=>{
+  if(!mc||mc.scrollWidth<=mc.clientWidth+1)return true;
+  const max=mc.scrollWidth-mc.clientWidth;
+  return d<0?(sl0<=1&&mc.scrollLeft<=1):(sl0>=max-1&&mc.scrollLeft>=max-1);
+ };
+ root.addEventListener('touchstart',e=>{
+  if(st>=3)return;
+  st=(isMobile()&&state.tab==='records'&&state.ui.aview==='day'&&canView()&&e.touches.length===1&&$('sheet').hidden&&!e.target.closest('input,select,textarea,.seg,.tools,.mc-bar,[data-noswipe]'))?1:0;
+  if(!st)return;
+  sx=lastX=e.touches[0].clientX;sy=e.touches[0].clientY;lastT=Date.now();vel=0;
+  mc=e.target.closest('.mc');sl0=mc?mc.scrollLeft:0;
+ },{passive:true});
+ root.addEventListener('touchmove',e=>{
+  if(st<1||st>2)return;
+  const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy,now=Date.now();
+  if(st===1){
+   if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){st=0;return}
+   if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.2){
+    const d=dx<0?1:-1;
+    if(!edgeOk(d)){st=0;return}
+    begin(d);if(st!==2)return;
+   }else return;
+  }
+  if(now>lastT){vel=(t.clientX-lastX)/(now-lastT);lastX=t.clientX;lastT=now}
+  place(Math.max(0,Math.min(1,(-dir*(t.clientX-sx))/W)));
+ },{passive:true});
+ root.addEventListener('touchend',e=>{
+  if(st<1||st>2)return;
+  if(st===1){st=0;return}
+  const p=Math.max(0,(-dir*(e.changedTouches[0].clientX-sx))/W);
+  finish(p>.33||(p>.08&&-dir*vel>.5));
+ },{passive:true});
+ root.addEventListener('touchcancel',()=>{if(st===2)finish(false);else if(st===1)st=0},{passive:true});
+}
+
 /* ---------- клієнти ---------- */
 $('clients').addEventListener('click',e=>{
  const t=e.target;let b;
