@@ -485,32 +485,101 @@ function openTask(init){
  });
 }
 
-/* ---------- швидкий вибір дати ---------- */
+/* ---------- швидкий вибір дати: дні → місяці → роки, гортання кубом ---------- */
 function openCal(){
  if(state.status!=='ready')return;
- let ym=state.ui.adate.slice(0,7);
+ let ym=state.ui.adate.slice(0,7),lv='d',yp=0;
  const has=new Set(state.appts.filter(isOk).map(a=>a.d));
- const draw=()=>{
-  const [y,m]=ym.split('-').map(Number),first=ym+'-01',lead=(dow(first)+6)%7,n=new Date(Date.UTC(y,m,0)).getUTCDate(),t=todayKey();
-  let cells='';for(let i=0;i<lead;i++)cells+='<i></i>';
-  for(let d=1;d<=n;d++){const k=ym+'-'+pad(d);cells+=`<button type="button" class="cal-d${k===t?' today':''}${k===state.ui.adate?' on':''}${has.has(k)?' has':''}" data-k="${k}">${d}</button>`}
-  const yrs=[];for(let i=y-3;i<=y+5;i++)yrs.push(i);
-  $('cal').innerHTML=`<div class="cal-h"><button type="button" class="iconbtn" data-cm="-12" aria-label="Рік назад">«</button><button type="button" class="iconbtn" data-cm="-1" aria-label="Місяць назад">‹</button>
-   <select id="cal-m" aria-label="Місяць">${MONTHS.map((x,i)=>`<option value="${i+1}" ${i+1===m?'selected':''}>${x}</option>`).join('')}</select>
-   <select id="cal-y" aria-label="Рік">${yrs.map(x=>`<option ${x===y?'selected':''}>${x}</option>`).join('')}</select>
-   <button type="button" class="iconbtn" data-cm="1" aria-label="Місяць вперед">›</button><button type="button" class="iconbtn" data-cm="12" aria-label="Рік вперед">»</button></div>
-   <div class="cal-w">${['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-g">${cells}</div>`;
+ const base=y=>y-5;
+ const step=n=>{if(lv==='d')ym=addMonths(ym+'-01',n).slice(0,7);else if(lv==='m')ym=(+ym.slice(0,4)+n)+ym.slice(4);else yp+=n*12};
+ const html=()=>{
+  const y=+ym.slice(0,4),m=+ym.slice(5,7),t=todayKey(),sel=state.ui.adate;
+  let head,grid;
+  const nav=(c)=>`<button type="button" class="iconbtn" data-cm="-1" aria-label="Назад">‹</button>${c}<button type="button" class="iconbtn" data-cm="1" aria-label="Вперед">›</button>`;
+  if(lv==='d'){
+   const lead=(dow(ym+'-01')+6)%7,n=new Date(Date.UTC(y,m,0)).getUTCDate();
+   let cells='';for(let i=0;i<lead;i++)cells+='<i></i>';
+   for(let d=1;d<=n;d++){const k=ym+'-'+pad(d);cells+=`<button type="button" class="cal-d${k===t?' today':''}${k===sel?' on':''}${has.has(k)?' has':''}" data-k="${k}">${d}</button>`}
+   for(let i=lead+n;i<42;i++)cells+='<i></i>';
+   head=nav(`<button type="button" class="cal-t" data-lv="m">${MONTHS[m-1]}</button><button type="button" class="cal-t" data-lv="y">${y}</button>`);
+   grid=`<div class="cal-w">${['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-g">${cells}</div>`;
+  }else if(lv==='m'){
+   head=nav(`<button type="button" class="cal-t" data-lv="y">${y}</button>`);
+   grid=`<div class="cal-b">${MONTHS.map((x,i)=>{const k=y+'-'+pad(i+1);return`<button type="button" class="cal-c${k===t.slice(0,7)?' today':''}${k===sel.slice(0,7)?' on':''}" data-cmo="${i+1}">${x}</button>`}).join('')}</div>`;
+  }else{
+   if(!yp)yp=base(y);
+   head=nav(`<span class="cal-t">${yp} – ${yp+11}</span>`);
+   grid=`<div class="cal-b">${Array.from({length:12},(_,i)=>yp+i).map(x=>`<button type="button" class="cal-c${x===+t.slice(0,4)?' today':''}${x===+sel.slice(0,4)?' on':''}" data-cyr="${x}">${x}</button>`).join('')}</div>`;
+  }
+  return`<div class="cal-h">${head}</div>${grid}`;
  };
- showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Обрати дату</h2>${closeBtn}</div><div id="cal"></div><div class="actions"><button class="btn" id="cal-t">Сьогодні</button></div>`);
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Обрати дату</h2>${closeBtn}</div><div id="cal"></div><div class="actions"><button class="btn" id="cal-today">Сьогодні</button></div>`);
+ const stage=$('cal');
+ const draw=()=>{stage.innerHTML='<div class="cal-v">'+html()+'</div>'};
  draw();
  const go=k=>{state.ui.adate=k;closeSheet();renderRecords()};
- $('cal').addEventListener('click',e=>{
+ stage.addEventListener('click',e=>{
   let b;
-  if((b=e.target.closest('[data-cm]'))){ym=addMonths(ym+'-01',+b.dataset.cm).slice(0,7);draw()}
+  if((b=e.target.closest('[data-cm]'))){step(+b.dataset.cm);draw()}
+  else if((b=e.target.closest('[data-lv]'))){lv=b.dataset.lv;if(lv==='y')yp=base(+ym.slice(0,4));draw()}
+  else if((b=e.target.closest('[data-cmo]'))){ym=ym.slice(0,4)+'-'+pad(+b.dataset.cmo);lv='d';draw()}
+  else if((b=e.target.closest('[data-cyr]'))){ym=b.dataset.cyr+ym.slice(4);lv='m';draw()}
   else if((b=e.target.closest('[data-k]')))go(b.dataset.k);
  });
- $('cal').addEventListener('change',e=>{
-  if(e.target.id==='cal-m'||e.target.id==='cal-y'){ym=$('cal-y').value+'-'+pad(+$('cal-m').value);draw()}
- });
- $('cal-t').addEventListener('click',()=>go(todayKey()));
+ $('cal-today').addEventListener('click',()=>go(todayKey()));
+ /* гортання куба пальцем */
+ const EASE='transform .32s cubic-bezier(.2,.8,.2,1)';
+ let sx=0,sy=0,st=0,dir=0,W=0,view=null,ghost=null,lastX=0,lastT=0,vel=0;
+ const place=p=>{
+  const th=-dir*p*90;
+  view.style.transform=`translateZ(${-W/2}px) rotateY(${th}deg) translateZ(${W/2}px)`;
+  ghost.style.transform=`translateZ(${-W/2}px) rotateY(${th+dir*90}deg) translateZ(${W/2}px)`;
+  view.style.filter=`brightness(${1-.35*p})`;ghost.style.filter=`brightness(${.65+.35*p})`;
+ };
+ const cleanup=()=>{
+  if(ghost){ghost.remove();ghost=null}
+  stage.style.perspective='';stage.style.position='';stage.style.overflowX='';
+  if(view){view.style.cssText=''}
+  st=0;dir=0;
+ };
+ const begin=d=>{
+  dir=d;view=stage.firstElementChild;W=stage.offsetWidth;
+  const sv=[ym,yp];step(d);const h=html();[ym,yp]=sv;
+  ghost=document.createElement('div');ghost.className='cal-v';ghost.innerHTML=h;
+  stage.style.position='relative';stage.style.perspective='1500px';stage.style.overflowX='clip';
+  ghost.style.cssText='position:absolute;top:0;left:0;width:100%;backface-visibility:hidden;pointer-events:none';
+  view.style.backfaceVisibility='hidden';view.style.willChange='transform';
+  stage.appendChild(ghost);place(0);st=2;
+ };
+ const finish=commit=>{
+  if(st!==2){cleanup();return}
+  st=3;view.style.transition=EASE;ghost.style.transition=EASE;
+  if(commit){
+   view.style.transform=`translateZ(${-W/2}px) rotateY(${-dir*90}deg) translateZ(${W/2}px)`;
+   ghost.style.transform=`translateZ(${-W/2}px) rotateY(0deg) translateZ(${W/2}px)`;view.style.filter='brightness(.65)';ghost.style.filter='none';
+   setTimeout(()=>{step(dir);cleanup();draw()},330);
+  }else{place(0);setTimeout(cleanup,330)}
+ };
+ stage.addEventListener('touchstart',e=>{
+  if(st>=3)return;
+  st=e.touches.length===1?1:0;
+  sx=lastX=e.touches[0].clientX;sy=e.touches[0].clientY;lastT=Date.now();vel=0;
+ },{passive:true});
+ stage.addEventListener('touchmove',e=>{
+  if(st<1||st>2)return;
+  const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy,now=Date.now();
+  if(st===1){
+   if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){st=0;return}
+   if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.2)begin(dx<0?1:-1);else return;
+  }
+  if(now>lastT){vel=(t.clientX-lastX)/(now-lastT);lastX=t.clientX;lastT=now}
+  place(Math.max(0,Math.min(1,(-dir*(t.clientX-sx))/W)));
+ },{passive:true});
+ stage.addEventListener('touchend',e=>{
+  if(st<1||st>2)return;
+  if(st===1){st=0;return}
+  const p=Math.max(0,(-dir*(e.changedTouches[0].clientX-sx))/W);
+  finish(p>.33||(p>.08&&-dir*vel>.5));
+ },{passive:true});
+ stage.addEventListener('touchcancel',()=>{if(st===2)finish(false);else if(st===1)st=0},{passive:true});
 }
