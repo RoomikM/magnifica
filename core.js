@@ -410,9 +410,9 @@ function showSheet(html){
 }
 function closeSheet(){$('sheet').hidden=true;document.documentElement.classList.remove('lock')}
 const closeBtn='<button class="x" data-close aria-label="Закрити"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
-function toast(m){
+function toast(m,ms){
  document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;
- document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
+ document.body.appendChild(t);setTimeout(()=>t.remove(),ms||2800);
 }
 function errText(e){
  const c=e&&e.code;

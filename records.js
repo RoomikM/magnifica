@@ -396,7 +396,7 @@ function openAppt(init){
    const wasSub=!!(ex&&ex.subUsed);
    if(m)lsSet('magnifica-lastm',m);
    const r=await Store.saveAppt(obj.id,obj);
-   if(m&&obj.st==='ok'&&(!ex||ex.m!==m))pushNotify(m).then(x=>{if(x&&x.msg)setTimeout(()=>toast(x.msg),900)});
+   if(m&&obj.st==='ok'&&(!ex||ex.m!==m))pushNotify(m).then(x=>{if(x&&x.msg)setTimeout(()=>toast(x.msg,8000),900)});
    if(wasSub&&(!nowSub||ex.cid!==cid))await subAdjust(ex.cid,1);
    if(nowSub&&(!wasSub||ex.cid!==cid))await subAdjust(cid,-1);
    state.ui.adate=d;closeSheet();
