@@ -60,10 +60,13 @@ function renderCabinet(){
  const wd=`<div class="card"><h2>Завантаження за днями тижня</h2>${order.map(i=>`<div class="cab-row"><span class="cab-m">${WD_SHORT[i]}</span><div class="bar"><i style="width:${(D.wd[i]/maxW*100).toFixed(1)}%"></i></div><b>${D.wd[i]}</b></div>`).join('')}</div>`;
  const top=`<div class="card"><h2>Постійні клієнти</h2>${D.top.length?D.top.map(x=>`<div class="cab-row"><span class="cab-m wide">${esc(x.name)}</span><span class="m">${x.n} візит.</span><b>${money(Math.round(x.sum))}</b></div>`).join(''):'<div class="empty">Поки порожньо.</div>'}</div>`;
  const up=`<div class="card"><h2>Найближчі записи</h2>${D.up.length?D.up.slice(0,8).map(a=>`<div class="cab-row up"><b>${ddmm(a.d)} ${esc(a.t)}</b><span class="cab-m wide">${esc(a.name||'Без імені')}</span><span class="m">${esc(itemsText(a))}</span></div>`).join(''):'<div class="empty">Майбутніх записів немає.</div>'}</div>`;
- el.innerHTML=nav+hero+tiles+`<div class="cab-grid">${days}${up}${mon}${svc}${wd}${top}</div>`;
+ const snd=`<div class="card cab-snd"><label class="chk"><input type="checkbox" id="snd-on" ${lsGet('magnifica-snd','1')!=='0'?'checked':''}> Звуковий сигнал, коли адміністратор створює мені запис</label><div class="hint" style="margin:6px 0 8px">Звучить, поки застосунок відкритий (навіть у фоновій вкладці). Налаштування окреме для кожного пристрою. Якщо застосунок закрито або телефон його «приспав», звуку не буде.</div><button class="btn sm" type="button" id="snd-test">▶ Прослухати</button></div>`;
+ el.innerHTML=nav+hero+tiles+`<div class="cab-grid">${days}${up}${mon}${svc}${wd}${top}</div>`+snd;
 }
+$('cabinet').addEventListener('change',e=>{if(e.target.id==='snd-on')lsSet('magnifica-snd',e.target.checked?'1':'0')});
 $('cabinet').addEventListener('click',e=>{
  let b;
+ if(e.target.closest('#snd-test')){chime(true);return}
  if((b=e.target.closest('[data-cm]'))){state.ui.cmode=b.dataset.cm;renderCabinet();return}
  if((b=e.target.closest('[data-cn]'))){
   const n=+b.dataset.cn,[y,m]=state.ui.cmonth.split('-').map(Number);

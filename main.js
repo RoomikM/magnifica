@@ -255,6 +255,36 @@ $('loginForm').addEventListener('submit',async e=>{
 $('installLogin').addEventListener('click',doInstall);drawInstall();
 $('installHint').hidden=true;
 
+/* ---------- звуковий сигнал майстру про новий запис (власний «дзвіночок», без файлів) ---------- */
+let audioCtx=null;
+const sndOn=()=>lsGet('magnifica-snd','1')!=='0';
+function audioUnlock(){
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  if(!audioCtx)audioCtx=new AC();
+  if(audioCtx.state==='suspended')audioCtx.resume();
+ }catch(e){}
+}
+['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,audioUnlock,{passive:true}));
+function chime(force){
+ if(!force&&!sndOn())return;
+ try{
+  audioUnlock();if(!audioCtx||audioCtx.state!=='running')return;
+  const t0=audioCtx.currentTime+.02;
+  /* три ноти догори: мі – соль-дієз – сі, з м'яким затуханням і легким обертоном */
+  [[659.25,0],[830.61,.16],[987.77,.32]].forEach(([f,d],i)=>{
+   [[1,.22],[2,.06]].forEach(([mul,vol])=>{
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='sine';o.frequency.value=f*mul;
+    const st=t0+d,len=i===2?1.1:.6;
+    g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(vol,st+.015);g.gain.exponentialRampToValueAtTime(.0008,st+len);
+    o.connect(g);g.connect(audioCtx.destination);o.start(st);o.stop(st+len+.05);
+   });
+  });
+ }catch(e){}
+}
+window.chime=chime;
+
 /* ---------- маячок про нові записи ---------- */
 const seenAppts=new Set(),mineAppts=new Set();let apptsInit=false;
 state.newAppts=0;
@@ -285,6 +315,7 @@ function trackNew(list){
  const a=add[add.length-1];
  toast('Новий запис: '+(a.name||'без імені')+' · '+full(a.d).slice(0,5)+' '+a.t+(a.mn?' · '+a.mn:''));
  try{if(navigator.vibrate)navigator.vibrate(120)}catch(e){}
+ if(add.some(x=>x.m&&x.m===myMid()))chime();
 }
 {const o=Store.saveAppt;if(o)Store.saveAppt=function(id,d){mineAppts.add(id);if(d&&typeof d==='object'&&!d.by&&myUid())d.by=myUid();return o.apply(Store,arguments)}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab==='records'){markSeen();if(state.newAppts){state.newAppts=0;drawBadge()}}});
