@@ -748,3 +748,12 @@ html:not([data-mode="desktop"]) .table-wrap td{font-size:11px;padding-left:2px;p
 
 .ev.pv,.ag.pv{--ec:var(--muted);color:var(--muted);border-left:3px dotted var(--muted);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 18%,var(--card-solid)) 0 7px,color-mix(in srgb,var(--muted) 9%,var(--card-solid)) 7px 14px)}
 .ev.pv .n,.ag.pv .ag-n{font-weight:700;font-style:italic}
+
+#cal .cal-h{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:10px}
+#cal .cal-h select{flex:1;min-width:0}
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-w span{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:4px 0}
+.cal-d{position:relative;border:1px solid var(--line);background:var(--card-solid);color:var(--text);border-radius:11px;padding:0;height:42px;font:inherit;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.cal-d.today{border-color:var(--accent);color:var(--accent)}
+.cal-d.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.cal-d.has::after{content:"";position:absolute;left:50%;bottom:5px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:currentColor;opacity:.6}

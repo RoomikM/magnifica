@@ -111,6 +111,7 @@ $('records').addEventListener('click',e=>{
  if((b=t.closest('[data-d]'))){u.adate=b.dataset.d;u.aview='day';lsSet('magnifica-aview','day');renderRecords();return}
   if(t.closest('[data-wait]')){openWait();return}
  if(t.closest('[data-priv]')){openTask();return}
+ if(t.closest('[data-cal]')){openCal();return}
  if((b=t.closest('[data-id]'))){const a=state.appts.find(x=>x.id===b.dataset.id);if(a)openAppt(a);else{const k=state.tasks.find(x=>x.id===b.dataset.id);if(k&&canPriv())openTask(k)}return}
  const col=t.closest('.tl-col');
  if(col&&can('apptAdd')){

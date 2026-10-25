@@ -108,7 +108,7 @@ function recToolbar(){
  let lbl;
  if(v==='day')lbl=dayLabel(u.adate);
  else{const m=keyOf(mondayOf(u.adate));lbl=full(m).slice(0,5)+' — '+full(addDays(m,6)).slice(0,5)+'.'+addDays(m,6).slice(0,4)}
- return `<div class="tools">${seg}${masterSelect()}${privBtn()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button></div>`;
+ return `<div class="tools">${seg}${masterSelect()}${privBtn()}${waitBtn()}</div><div class="tools"><div class="navdate grow"><button class="iconbtn" data-nav="-1" aria-label="Назад">‹</button><span class="lbl">${esc(lbl)}</span><button class="iconbtn" data-nav="1" aria-label="Вперед">›</button></div><button class="btn sm" data-nav="today">Сьогодні</button><button class="btn sm" data-cal>📅 Календар</button></div>`;
 }
 function recBody(){
  if(!canView())return '<div class="card"><div class="empty">У вас є право лише додавати записи. Перегляд списку вимкнено адміністратором.</div></div>';
@@ -483,4 +483,34 @@ function openTask(init){
    savedToast(r,'Збережено · '+ddmm(d)+' '+t);
   }catch(e){err(errText(e));b.disabled=false;b.textContent='Зберегти'}
  });
+}
+
+/* ---------- швидкий вибір дати ---------- */
+function openCal(){
+ if(state.status!=='ready')return;
+ let ym=state.ui.adate.slice(0,7);
+ const has=new Set(state.appts.filter(isOk).map(a=>a.d));
+ const draw=()=>{
+  const [y,m]=ym.split('-').map(Number),first=ym+'-01',lead=(dow(first)+6)%7,n=new Date(Date.UTC(y,m,0)).getUTCDate(),t=todayKey();
+  let cells='';for(let i=0;i<lead;i++)cells+='<i></i>';
+  for(let d=1;d<=n;d++){const k=ym+'-'+pad(d);cells+=`<button type="button" class="cal-d${k===t?' today':''}${k===state.ui.adate?' on':''}${has.has(k)?' has':''}" data-k="${k}">${d}</button>`}
+  const yrs=[];for(let i=y-3;i<=y+5;i++)yrs.push(i);
+  $('cal').innerHTML=`<div class="cal-h"><button type="button" class="iconbtn" data-cm="-12" aria-label="Рік назад">«</button><button type="button" class="iconbtn" data-cm="-1" aria-label="Місяць назад">‹</button>
+   <select id="cal-m" aria-label="Місяць">${MONTHS.map((x,i)=>`<option value="${i+1}" ${i+1===m?'selected':''}>${x}</option>`).join('')}</select>
+   <select id="cal-y" aria-label="Рік">${yrs.map(x=>`<option ${x===y?'selected':''}>${x}</option>`).join('')}</select>
+   <button type="button" class="iconbtn" data-cm="1" aria-label="Місяць вперед">›</button><button type="button" class="iconbtn" data-cm="12" aria-label="Рік вперед">»</button></div>
+   <div class="cal-w">${['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-g">${cells}</div>`;
+ };
+ showSheet(`<div class="sheet-head"><h2 id="sheetTitle">Обрати дату</h2>${closeBtn}</div><div id="cal"></div><div class="actions"><button class="btn" id="cal-t">Сьогодні</button></div>`);
+ draw();
+ const go=k=>{state.ui.adate=k;closeSheet();renderRecords()};
+ $('cal').addEventListener('click',e=>{
+  let b;
+  if((b=e.target.closest('[data-cm]'))){ym=addMonths(ym+'-01',+b.dataset.cm).slice(0,7);draw()}
+  else if((b=e.target.closest('[data-k]')))go(b.dataset.k);
+ });
+ $('cal').addEventListener('change',e=>{
+  if(e.target.id==='cal-m'||e.target.id==='cal-y'){ym=$('cal-y').value+'-'+pad(+$('cal-m').value);draw()}
+ });
+ $('cal-t').addEventListener('click',()=>go(todayKey()));
 }
