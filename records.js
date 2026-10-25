@@ -25,7 +25,7 @@ function lanes(list){
  flush();return out;
 }
 function trange(lists){
- let sh=8,eh=21;
+ let sh=6,eh=24;
  lists.forEach(l=>l.forEach(a=>{sh=Math.min(sh,Math.floor(toMin(a.t)/60));eh=Math.max(eh,Math.ceil((toMin(a.t)+(+a.dur||60))/60))}));
  return [Math.max(0,sh),Math.min(24,eh)];
 }
@@ -331,7 +331,7 @@ function openAppt(init){
   const hitAt=s=>busy.find(x=>toMin(x.t)<s+dur&&toMin(x.t)+(+x.dur||60)>s);
   const now=nowKey();
   let h='';
-  for(let s=480;s<=1290;s+=30){
+  for(let s=360;s<=1410;s+=30){
    const t=pad(Math.floor(s/60))+':'+pad(s%60),hit=hitAt(s);
    h+=`<button type="button" class="slot${hit?' busy':''}${isDate(d)&&(d+' '+t)<now?' past':''}${cur===t?' on':''}" data-t="${t}" aria-pressed="${cur===t}"${hit?` title="Зайнято: ${esc(hit.t)} ${esc(hit.pv?'':hit.name||'')}"`:''}>${t}</button>`;
   }
