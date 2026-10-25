@@ -6,6 +6,7 @@
 
 const PUSH=()=>window.PUSH_CONFIG||{};
 const pushSupported=()=>{const c=PUSH();return !!(c.url&&c.vapid&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&Store&&Store.savePush)};
+const pushConfigured=()=>{const c=PUSH();return !!(c.url&&c.vapid&&typeof Store!=='undefined'&&Store.getPush)};
 const pushDev=()=>{let d=lsGet('magnifica-pushdev','');if(!d){d=Math.random().toString(36).slice(2,10);lsSet('magnifica-pushdev',d)}return d};
 const b64u=s=>{const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
 const pushDocId=()=>myMid()+'_'+pushDev();
@@ -32,7 +33,8 @@ async function pushDisable(){
 /* адміністратор: сповістити майстра mid. Повертає короткий підсумок для повідомлення на екрані */
 async function pushNotify(mid){
  try{
-  if(!pushSupported()||!mid||mid===myMid())return null;
+  if(!pushConfigured()||!mid)return null;
+  if(mid===myMid())return{msg:'Запис створено для вас самих: сповіщення собі не надсилається'};
   let subs;
   try{subs=(await Store.getPush(mid)).filter(x=>x.sub&&x.sub.endpoint)}
   catch(e){return{msg:'Сповіщення майстру: немає доступу до бази (перевірте правила Firestore для push)'}}
